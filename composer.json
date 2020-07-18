@@ -1,0 +1,31 @@
+{
+  "name": "kakuilan/php-redisque",
+  "description": "php redis queue library",
+  "keywords": [
+    "php queue",
+    "redis queue"
+  ],
+  "homepage": "https://github.com/kakuilan/php-redisque",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "kakuilan",
+      "email": "kakuilan@163.com",
+      "homepage": "https://github.com/kakuilan"
+    }
+  ],
+  "require": {
+    "php": "^7.2",
+    "ext-redis": "*",
+    "kakuilan/php-helper": "^0.2.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^8.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Redisque\\": "src",
+      "Redisque\\Tests\\": "tests"
+    }
+  }
+}
