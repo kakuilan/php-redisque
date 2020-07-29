@@ -26,6 +26,60 @@ class RedisQueue extends BaseService {
 
 
     /**
+     * 队列类型-有序队列(有序集合)
+     */
+    const QUEUE_TYPE_ISSORT = 'issort';
+
+
+    /**
+     * 队列类型-无序队列(列表),先进先出
+     */
+    const QUEUE_TYPE_NOSORT = 'nosort';
+
+
+    /**
+     * 有序列表的分数字段名
+     */
+    const QUEUE_SCORE_FIELD = 'queue_score';
+
+
+    /**
+     * 所有队列名称的哈希表key
+     */
+    const QUEUE_ALL_NAME = 'all_queue_names';
+
+
+    /**
+     * 中转队列key
+     */
+    const QUEUE_TRANS_QUEU = 'transfer_que';
+
+
+    /**
+     * 中转哈希表key
+     */
+    const QUEUE_TRANS_TABL = 'transfer_tab';
+
+
+    /**
+     * 默认的中转队列重新入栈时间,秒
+     */
+    const QUEUE_TRANS_TIME = Consts::TTL_TWO_MINUTE;
+
+
+    /**
+     * 中转队列的处理锁key
+     */
+    const QUEUE_TRANS_LOCKKEY = 'trans_lock';
+
+
+    /**
+     * 中转队列的锁时间,秒
+     */
+    const QUEUE_TRANS_LOCKTIM = Consts::TTL_HALF_HOUR;
+
+
+    /**
      * 队列相关键前缀
      * @var string
      */
@@ -37,6 +91,13 @@ class RedisQueue extends BaseService {
      * @var array
      */
     protected $conf = [];
+
+
+    /**
+     * 客户端标识键
+     * @var string
+     */
+    protected $clientKey = '';
 
 
     /**
@@ -205,8 +266,24 @@ class RedisQueue extends BaseService {
     }
 
 
+    /**
+     * 获取redis客户端
+     * @param null $param
+     * @return Redis
+     * @throws QueueException
+     */
     public function getRedis($param = null): Redis {
+        if (is_null($param)) {
+            $param = $this->clientKey;
+        }
 
+        if (is_array($param)) {
+            $res = self::getRedisByConf($param);
+        } else {
+            $res = self::getRedisByKey(strval($param));
+        }
+
+        return $res;
     }
 
 
