@@ -11,54 +11,97 @@ namespace Redisque;
 
 use Kph\Exceptions\BaseException;
 
+
+/**
+ * Class QueueException
+ * @package Redisque
+ */
 class QueueException extends BaseException {
 
-    /**
-     * redis客户端不存在-错误码
-     */
-    const ERR_CLIENT_NOTEXIST_CODE = 1;
-
 
     /**
-     * redis客户端不存在-消息
+     * 错误码-队列名为空
      */
-    const ERR_CLIENT_NOTEXIST_MSG = 'Redis client does not exist.';
+    const ERR_CODE_QUEUE_NAMEEMPTY = 1;
 
 
     /**
-     * 配置错误-错误码
+     * 错误消息-队列名为空
      */
-    const ERR_CONF_CODE = 2;
+    const ERR_MESG_QUEUE_NAMEEMPTY = 'The queue name cannot be empty.';
 
 
     /**
-     * 配置错误-消息
+     * 错误码-队列不存在
      */
-    const ERR_CONF_MSG = 'The fields configured must be the same as the default:';
+    const ERR_CODE_QUEUE_NOTEXIST = 2;
 
 
     /**
-     * redis不能连接-错误码
+     * 错误消息-队列不存在
      */
-    const ERR_CANNOT_CONNECT_CODE = 3;
+    const ERR_MESG_QUEUE_NOTEXIST = 'The queue does not exist:';
 
 
     /**
-     * redis不能连接-消息
+     * 错误码-队列存在但类型冲突
      */
-    const ERR_CANNOT_CONNECT_MSG = 'Cannot connect to Redis.';
+    const ERR_CODE_QUEUE_EXIST_TYPECONFLICT = 3;
 
 
     /**
-     * 队列不存在-错误码
+     * 错误消息-队列存在但类型冲突
      */
-    const ERR_QUEUE_NOTEXIST_CODE = 4;
+    const ERR_MESG_QUEUE_EXIST_TYPECONFLICT = 'The queue exist, but type conflict.';
 
 
     /**
-     * 队列不存在-消息
+     * 错误码-队列消息为空
      */
-    const ERR_QUEUE_NOTEXIST_MSG = 'The queue does not exist.';
+    const ERR_CODE_QUEUE_MESSAG_EEMPTY = 4;
+
+
+    /**
+     * 错误消息-队列消息为空
+     */
+    const ERR_MESG_QUEUE_MESSAG_EEMPTY = 'The queue message cannot be empty.';
+
+
+    /**
+     * 错误码-队列消息中转失败
+     */
+    const ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL = 5;
+
+
+    /**
+     * 错误消息-队列消息中转失败
+     */
+    const ERR_MESG_QUEUE_MESSAG_TRANSFERFAIL = 'The queue message transfer failed.';
+
+
+    /**
+     * 错误码-队列消息确认失败
+     */
+    const ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL = 6;
+
+
+    /**
+     * 错误消息-队列消息确认失败
+     */
+    const ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL = 'The queue message confirm failed.';
+
+
+
+    /**
+     * 错误码-队列操作失败
+     */
+    const ERR_CODE_QUEUE_OPERATE_FAIL = 99;
+
+
+    /**
+     * 错误消息-队列操作失败
+     */
+    const ERR_MESG_QUEUE_OPERATE_FAIL = 'The queue oeration failed, try again later.';
 
 
 }
