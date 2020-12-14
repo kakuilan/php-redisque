@@ -132,10 +132,11 @@ interface QueueInterface {
 
     /**
      * 将中转消息重新加入相应的处理队列
-     * @param string $uniqueCode 机器唯一码s
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
+     * @param string $uniqueCode 机器唯一码
      * @return int
      */
-    public function transMsgReadd2Queue(string $uniqueCode = ''): int;
+    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int;
 
 
     /**
