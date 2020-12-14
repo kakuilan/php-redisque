@@ -15,15 +15,15 @@ use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\ValidateHelper;
 use Redis;
 use RedisException;
-use Throwable;
+use Exception;
 use Error;
+use Throwable;
 
 /**
  * Class RedisQueue
  * @package Redisque
  */
-class RedisQueue extends BaseService {
-
+class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 队列类型-有序队列(有序集合)
@@ -38,6 +38,54 @@ class RedisQueue extends BaseService {
 
 
     /**
+     * 非优先队列-无及时性要求,如日志
+     */
+    const QUEUE_PRIORITY_NO = 0;
+
+
+    /**
+     * 优先队列-对及时性有要求,如短信
+     */
+    const QUEUE_PRIORITY_IS = 1;
+
+
+    /**
+     * 中转队列名
+     */
+    const QUEUE_TRANS_NAME = [
+        0 => 'transfer_que_common', //非优先队列中转
+        1 => 'transfer_que_important', //优先队列中转
+    ];
+
+
+    /**
+     * 中转哈希表
+     */
+    const QUEUE_TRANS_TABL = [
+        0 => 'transfer_tab_common', //非优先队列中转
+        1 => 'transfer_tab_important', //优先队列中转
+    ];
+
+
+    /**
+     * 中转队列的锁名
+     */
+    const QUEUE_TRANS_LOCK_KEY = [
+        0 => 'transfer_lock_common', //非优先队列中转
+        1 => 'transfer_lock_important', //优先队列中转
+    ];
+
+
+    /**
+     * 中转队列的锁时间,秒
+     */
+    const QUEUE_TRANS_LOCK_TIME = [
+        0 => Consts::TTL_ONE_HOUR, //非优先队列中转
+        1 => Consts::TTL_FIF_MINUTE, //优先队列中转
+    ];
+
+
+    /**
      * 有序列表的分数字段名
      */
     const QUEUE_SCORE_FIELD = 'queue_score';
@@ -46,254 +94,82 @@ class RedisQueue extends BaseService {
     /**
      * 所有队列名称的哈希表key
      */
-    const QUEUE_ALL_NAME = 'all_queue_names';
+    const QUEUE_ALL_NAME = 'all_queues';
 
 
     /**
-     * 中转队列key
-     */
-    const QUEUE_TRANS_QUEU = 'transfer_que';
-
-
-    /**
-     * 中转哈希表key
-     */
-    const QUEUE_TRANS_TABL = 'transfer_tab';
-
-
-    /**
-     * 默认的中转队列重新入栈时间,秒
-     */
-    const QUEUE_TRANS_TIME = Consts::TTL_TWO_MINUTE;
-
-
-    /**
-     * 中转队列的处理锁key
-     */
-    const QUEUE_TRANS_LOCKKEY = 'trans_lock';
-
-
-    /**
-     * 中转队列的锁时间,秒
-     */
-    const QUEUE_TRANS_LOCKTIM = Consts::TTL_HALF_HOUR;
-
-
-    /**
-     * 队列相关键前缀
+     * 队列名
      * @var string
      */
-    protected $prefix = 'que_';
+    protected $name = '';
 
 
     /**
-     * redis配置
-     * @var array
+     * 是否有序队列
+     * @var bool
      */
-    protected $conf = [];
+    protected $isSort = false;
 
 
     /**
-     * 客户端标识键
-     * @var string
+     * 是否优先队列
+     * @var int
      */
-    protected $clientKey = '';
+    protected $priority = 0;
 
 
     /**
-     * 默认配置
-     * @var array
+     * 消息有效期,秒,0永久
+     * @var int
      */
-    public static $defaultConf = [
-        'host'         => '127.0.0.1',
-        'port'         => 6379,
-        'password'     => null,
-        'database'     => 0,
-        'wait_timeout' => Consts::TTL_TWO_MINUTE,
-    ];
+    protected $expire = 0;
 
 
-    /**
-     * redis持久ID
-     * @var string
-     */
-    protected static $persistentId = 'queue_conn_';
-
-
-    /**
-     * redis客户端对象缓存数组
-     * @var array
-     */
-    public static $clients = [];
-
-
-    /**
-     * 根据配置获取redis客户端
-     * @param array $conf
-     * @return Redis
-     * @throws QueueException
-     */
-    public static function getRedisByConf(array $conf = []): Redis {
-        if (empty($conf)) {
-            $conf = self::$defaultConf;
-        }
-
-        //检查配置的字段,必须和默认配置的相同
-        if (!ValidateHelper::isEqualArray(self::$defaultConf, $conf)) {
-            $msg = QueueException::ERR_CONF_MSG . implode(',', array_keys(self::$defaultConf)) . '.';
-            throw new QueueException($msg, QueueException::ERR_CONF_CODE);
-        }
-
-        sort($conf);
-        $clientKey = md5(json_encode($conf));
-
-        //redis客户端连接信息
-        $connInfo      = self::$clients[$clientKey] ?? null;
-        $now           = time();
-        $socketTimeout = ini_get('default_socket_timeout');
-        $waitTimeout   = intval($conf['wait_timeout']);
-        if ($socketTimeout > 0) {
-            $waitTimeout = min($socketTimeout, $waitTimeout);
-        }
-
-        $lastTime   = $connInfo['last_connect_time'] ?? 0; //上次连接时间
-        $expireTime = $lastTime + $waitTimeout; //预计过期时间
-
-        $pingRes = false;
-        if ($connInfo) {
-            if (!($now >= $lastTime && $now < $expireTime)) {
-                try {
-                    $ping    = $connInfo['redis']->ping();
-                    $pingRes = (strpos($ping, "PONG") !== false);
-                } catch (Error $e) {
-                }
-            }
-        }
-
-        //新建连接
-        if (empty($connInfo) || !$pingRes) {
-            $redis        = new Redis();
-            $persistentId = self::$persistentId . $clientKey;
-            $ret          = $redis->pconnect($conf['host'], $conf['port'], $waitTimeout + 1, $persistentId);
-            if (!empty($conf['password'])) {
-                $ret = $redis->auth($conf['password']);
-            }
-
-            if (!$ret) {
-                throw new QueueException(QueueException::ERR_CANNOT_CONNECT_MSG, QueueException::ERR_CANNOT_CONNECT_CODE);
-            }
-
-            $redis->select($conf['database']);
-
-            $connInfo = [
-                'redis'             => $redis,
-                'last_connect_time' => $now,
-            ];
-
-            self::$clients[$clientKey] = $connInfo;
-        }
-
-        return $connInfo['redis'];
+    public function getRedisClient(string $connName = ''): Redis {
+        // TODO: Implement getRedisClient() method.
     }
 
-
-    /**
-     * 根据键获取redis客户端
-     * @param string $key 客户端标识键
-     * @return Redis
-     * @throws QueueException
-     */
-    public static function getRedisByKey(string $key = ''): Redis {
-        if (empty($key) || !isset(self::$clients[$key])) {
-            throw new QueueException(QueueException::ERR_CLIENT_NOTEXIST_MSG, QueueException::ERR_CLIENT_NOTEXIST_CODE);
-        }
-
-        $connInfo      = self::$clients[$key];
-        $now           = time();
-        $socketTimeout = ini_get('default_socket_timeout');
-        $waitTimeout   = intval(self::$defaultConf['wait_timeout']);
-        if ($socketTimeout > 0) {
-            $waitTimeout = min($socketTimeout, $waitTimeout);
-        }
-
-        $lastTime   = $connInfo['last_connect_time'] ?? 0; //上次连接时间
-        $expireTime = $lastTime + $waitTimeout; //预计过期时间
-
-        if (!($now >= $lastTime && $now < $expireTime)) {
-            $pingRes = false;
-            try {
-                $ping    = $connInfo['redis']->ping();
-                $pingRes = (strpos($ping, "PONG") !== false);
-            } catch (Error $e) {
-            }
-
-            if (!$pingRes) {
-                $msg = QueueException::ERR_CANNOT_CONNECT_MSG . $e->getMessage();
-                throw new QueueException($msg, QueueException::ERR_CANNOT_CONNECT_CODE);
-            }
-
-            self::$clients[$key]['last_connect_time'] = $now;
-        }
-
-        return $connInfo['redis'];
+    public function add(array $item): bool {
+        // TODO: Implement add() method.
     }
 
-
-    /**
-     * 设置redis客户端对象
-     * @param string $clientKey 客户端标识键
-     * @param Redis $redis 客户端对象
-     * @return bool
-     */
-    public function setRedis(string $clientKey, Redis $redis): bool {
-        try {
-            $ping = $redis->ping();
-            $res  = strpos($ping, "PONG") !== false;
-        } catch (Throwable $e) {
-            $res = false;
-        }
-
-        if ($res) {
-            $connInfo = [
-                'redis'             => $redis,
-                'last_connect_time' => time(),
-            ];
-
-            self::$clients[$clientKey] = $connInfo;
-        }
-
-        return $res;
+    public function addMulti(array ...$items): bool {
+        // TODO: Implement addMulti() method.
     }
 
-
-    /**
-     * 获取redis客户端
-     * @param null $param
-     * @return Redis
-     * @throws QueueException
-     */
-    public function getRedis($param = null): Redis {
-        if (is_null($param)) {
-            $param = $this->clientKey;
-        }
-
-        if (is_array($param)) {
-            $res = self::getRedisByConf($param);
-        } else {
-            $res = self::getRedisByKey(strval($param));
-        }
-
-        return $res;
+    public function push(array $item): bool {
+        // TODO: Implement push() method.
     }
 
-
-    /**
-     * 设置前缀
-     * @param string $str
-     */
-    public function setPrefix(string $str) {
-        $this->prefix = $str;
+    public function pushMulti(array ...$items): bool {
+        // TODO: Implement pushMulti() method.
     }
 
+    public function shift() {
+        // TODO: Implement shift() method.
+    }
 
+    public function pop() {
+        // TODO: Implement pop() method.
+    }
+
+    public function transfer(array $item): bool {
+        // TODO: Implement transfer() method.
+    }
+
+    public function confirm($item, bool $ok = true): bool {
+        // TODO: Implement confirm() method.
+    }
+
+    public function len(string $queueName = ''): int {
+        // TODO: Implement len() method.
+    }
+
+    public function clear(string $queueName = ''): bool {
+        // TODO: Implement clear() method.
+    }
+
+    public function delete(string $queueName = ''): bool {
+        // TODO: Implement delete() method.
+    }
 }
