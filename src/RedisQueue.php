@@ -125,51 +125,15 @@ class RedisQueue extends BaseService implements QueueInterface {
     protected $expire = 0;
 
 
-    public function getRedisClient(string $connName = ''): Redis {
-        // TODO: Implement getRedisClient() method.
-    }
+    /**
+     * 中转队列重新入栈时间
+     * @var int
+     */
+    protected $transTime = 0;
 
-    public function add(array $item): bool {
-        // TODO: Implement add() method.
-    }
 
-    public function addMulti(array ...$items): bool {
-        // TODO: Implement addMulti() method.
-    }
 
-    public function push(array $item): bool {
-        // TODO: Implement push() method.
-    }
 
-    public function pushMulti(array ...$items): bool {
-        // TODO: Implement pushMulti() method.
-    }
 
-    public function shift() {
-        // TODO: Implement shift() method.
-    }
 
-    public function pop() {
-        // TODO: Implement pop() method.
-    }
-
-    public function transfer(array $item): bool {
-        // TODO: Implement transfer() method.
-    }
-
-    public function confirm($item, bool $ok = true): bool {
-        // TODO: Implement confirm() method.
-    }
-
-    public function len(string $queueName = ''): int {
-        // TODO: Implement len() method.
-    }
-
-    public function clear(string $queueName = ''): bool {
-        // TODO: Implement clear() method.
-    }
-
-    public function delete(string $queueName = ''): bool {
-        // TODO: Implement delete() method.
-    }
 }
