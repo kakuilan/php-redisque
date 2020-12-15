@@ -205,6 +205,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         return (int)$redis->hLen($key);
     }
 
+
     /**
      * 检查队列是否存在
      * @param string $queueName 队列名
@@ -212,7 +213,19 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public static function queueExists(string $queueName, $redis = null): bool {
-        // TODO: Implement queueExists() method.
+        if (empty($redis)) {
+            try {
+                $redis = self::getRedisDefault();
+            } catch (Throwable $e) {
+            }
+        }
+
+        if (!is_object($redis) || !($redis instanceof Redis)) {
+            return false;
+        }
+
+        $key = self::getQueueTableKey();
+        return (bool)$redis->hExists($key, $queueName);
     }
 
     /**
