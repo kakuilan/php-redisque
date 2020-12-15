@@ -16,6 +16,7 @@
   ],
   "require": {
     "php": "^7.2",
+    "ext-json": "*",
     "ext-redis": "*",
     "kakuilan/php-helper": "^0.3.4"
   },
