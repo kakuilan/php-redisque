@@ -4,7 +4,7 @@
  * User: Administrator
  * Date: 2020/7/18
  * Time: 20:04
- * Desc: redis队列
+ * Desc: Redis队列
  */
 
 namespace Redisque;
@@ -132,8 +132,111 @@ class RedisQueue extends BaseService implements QueueInterface {
     protected $transTime = 0;
 
 
+    public static function getPrefix(): string {
+        // TODO: Implement getPrefix() method.
+    }
 
+    public static function getRedisDefault(): Redis {
+        // TODO: Implement getRedisDefault() method.
+    }
 
+    public static function getQueues($redis = null): array {
+        // TODO: Implement getQueues() method.
+    }
 
+    public static function countQueues($redis = null): int {
+        // TODO: Implement countQueues() method.
+    }
 
+    public static function queueExists(string $queueName, $redis = null): bool {
+        // TODO: Implement queueExists() method.
+    }
+
+    public static function getLockOperate(string $operation, int $dataId, int $operateUid, int $ttl = 60, $redis = null): int {
+        // TODO: Implement getLockOperate() method.
+    }
+
+    public static function unlockOperate(string $operation, int $dataId, $redis = null): bool {
+        // TODO: Implement unlockOperate() method.
+    }
+
+    public function newQueue(array $conf): QueueInterface {
+        // TODO: Implement newQueue() method.
+    }
+
+    public function getRedisClient(string $connName = ''): Redis {
+        // TODO: Implement getRedisClient() method.
+    }
+
+    public function add(array $msg): bool {
+        // TODO: Implement add() method.
+    }
+
+    public function addMulti(array ...$msgs): bool {
+        // TODO: Implement addMulti() method.
+    }
+
+    public function push(array $msg): bool {
+        // TODO: Implement push() method.
+    }
+
+    public function pushMulti(array ...$msgs): bool {
+        // TODO: Implement pushMulti() method.
+    }
+
+    public function shift() {
+        // TODO: Implement shift() method.
+    }
+
+    public function pop() {
+        // TODO: Implement pop() method.
+    }
+
+    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
+        // TODO: Implement transMsgReadd2Queue() method.
+    }
+
+    public function getQueueInfo(string $queueName = ''): array {
+        // TODO: Implement getQueueInfo() method.
+    }
+
+    public function getMsgToTransKey(array $msg): string {
+        // TODO: Implement getMsgToTransKey() method.
+    }
+
+    public function getMsgByTransKey(string $key): array {
+        // TODO: Implement getMsgByTransKey() method.
+    }
+
+    public function getMsgsToTransKeys(array ...$msg): array {
+        // TODO: Implement getMsgsToTransKeys() method.
+    }
+
+    public function getMsgsByTransKeys(string ...$key): array {
+        // TODO: Implement getMsgsByTransKeys() method.
+    }
+
+    public function transfer(array $msg): bool {
+        // TODO: Implement transfer() method.
+    }
+
+    public function confirm(bool $ok, $msg): bool {
+        // TODO: Implement confirm() method.
+    }
+
+    public function confirmMulti(bool $ok, ...$msgs): int {
+        // TODO: Implement confirmMulti() method.
+    }
+
+    public function len(string $queueName = ''): int {
+        // TODO: Implement len() method.
+    }
+
+    public function clear(string $queueName = ''): bool {
+        // TODO: Implement clear() method.
+    }
+
+    public function delete(string $queueName = ''): bool {
+        // TODO: Implement delete() method.
+    }
 }

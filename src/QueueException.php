@@ -91,6 +91,29 @@ class QueueException extends BaseException {
     const ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL = 'The queue message confirm failed.';
 
 
+    /**
+     * 错误码-redis客户端不存在
+     */
+    const ERR_CODE_CLIENT_NOTEXIST = 7;
+
+
+    /**
+     * 错误消息-redis客户端不存在
+     */
+    const ERR_MESG_CLIENT_NOTEXIST = 'Redis client does not exist.';
+
+
+    /**
+     * 错误码-redis客户端不能连接
+     */
+    const ERR_CODE_CLIENT_CANNOT_CONNECT = 8;
+
+
+    /**
+     * 错误消息-redis客户端不能连接
+     */
+    const ERR_MESG_CLIENT_CANNOT_CONNECT = 'Redis client cannot connect.';
+
 
     /**
      * 错误码-队列操作失败

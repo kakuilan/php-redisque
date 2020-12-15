@@ -10,7 +10,6 @@
 namespace Redisque;
 
 use Redis;
-use RedisException;
 use Throwable;
 
 /**
@@ -37,24 +36,27 @@ interface QueueInterface {
 
     /**
      * 获取所有队列名
+     * @param null|mixed $redis Redis客户端对象
      * @return array
      */
-    public static function getQueues(): array;
+    public static function getQueues($redis = null): array;
 
 
     /**
      * 统计队列数
+     * @param null|mixed $redis Redis客户端对象
      * @return int
      */
-    public static function countQueues(): int;
+    public static function countQueues($redis = null): int;
 
 
     /**
      * 检查队列是否存在
      * @param string $queueName 队列名
+     * @param null|mixed $redis Redis客户端对象
      * @return bool
      */
-    public static function queueExists(string $queueName): bool;
+    public static function queueExists(string $queueName, $redis = null): bool;
 
 
     /**
@@ -63,7 +65,7 @@ interface QueueInterface {
      * @param int $dataId 数据ID
      * @param int $operateUid 当前操作者UID
      * @param int $ttl 有效期
-     * @param null $redis Redis客户端对象
+     * @param null|mixed $redis Redis客户端对象
      * @return int 获取到锁的UID:>0时为本身;<=0时为他人
      */
     public static function getLockOperate(string $operation, int $dataId, int $operateUid, int $ttl = 60, $redis = null): int;

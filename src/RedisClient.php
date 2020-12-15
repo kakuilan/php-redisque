@@ -4,115 +4,45 @@
  * User: Administrator
  * Date: 2020/12/14
  * Time: 11:43
- * Desc:
+ * Desc: Redis客户端
  */
 
 namespace Redisque;
 
-use Kph\Helpers\ArrayHelper;
-use Kph\Services\BaseService;
 use Redis;
-use RedisException;
-use Exception;
-use Error;
-use Throwable;
+
 
 /**
  * Class RedisClient
  * @package Redisque
  */
-class RedisClient extends BaseService {
+class RedisClient extends Redis {
 
 
     /**
-     * redis连接数组
-     * @var array
+     * 上次连接时间
+     * @var int
      */
-    protected static $conns = [];
+    protected $lastConnectTime = 0;
 
 
     /**
-     * 默认配置
-     * @var array
+     * 设置上次连接时间
+     * @param int $time
      */
-    protected static $defaultConf = [
-        'host'         => '127.0.0.1',
-        'port'         => 6379,
-        'password'     => null,
-        'select'       => null,
-        'wait_timeout' => 120, //保持连接超时,秒
-    ];
-
-
-    /**
-     * 设置默认配置
-     * @param array $conf
-     */
-    public static function setDefaultConf(array $conf): void {
-        if (!empty($conf)) {
-            self::$defaultConf = array_merge(self::$defaultConf, $conf);
+    public function setLastConnectTime(int $time): void {
+        if ($time > 0) {
+            $this->lastConnectTime = $time;
         }
     }
 
 
     /**
-     * 获取redis客户端
-     * @param array $conf redis配置
-     * @return array
+     * 获取上次连接时间
+     * @return int
      */
-    public static function getRedis(array $conf): array {
-        if (empty($conf)) {
-            $conf = self::$defaultConf;
-        }
-        ArrayHelper::regularSort($conf);
-
-        $key           = md5(json_encode($conf));
-        $now           = time();
-        $conn          = self::$conns[$key] ?? [];
-        $socketTimeout = ini_get('default_socket_timeout');
-        $waitTimeout   = intval($conf['wait_timeout'] ?? 120);
-        $lastTime      = $conn['last_connect_time'] ?? 0;
-        $persistentId  = $key; //长连接ID
-
-        if ($socketTimeout > 0) {
-            $waitTimeout = min($socketTimeout, $waitTimeout);
-        }
-
-        $maxTime = $lastTime + $waitTimeout;
-        $pingRes = false;
-        if ($conn) {
-            $pingRes = true;
-            if (!($now >= $lastTime && $now < $maxTime)) {
-                try {
-                    $ping    = $conn['redis']->ping();
-                    $pingRes = (strpos($ping, "PONG") !== false);
-                } catch (Throwable $e) {
-                    $pingRes = false;
-                }
-            }
-        }
-
-        if (empty($conn) || !$pingRes) {
-            $redis = new Redis();
-            $redis->pconnect($conf['host'], $conf['port'], 0, $persistentId);
-            if (isset($conf['password']) && !empty($conf['password'])) {
-                $redis->auth($conf['password']);
-            }
-
-            $selectDb = (isset($conf['select']) && is_int($conf['select'])) ? $conf['select'] : 0;
-            $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-            $redis->select($selectDb);
-
-            $conn = [
-                'last_connect_time' => $now,
-                'redis'             => $redis,
-            ];
-
-            self::$conns[$key] = $conn;
-        }
-        unset($key, $conf, $now, $socketTimeout, $lastTime, $maxTime, $pingRes, $redis);
-
-        return $conn;
+    public function getLastConnectTime(): int {
+        return $this->lastConnectTime;
     }
 
 

@@ -4,12 +4,13 @@
  * User: Administrator
  * Date: 2020/12/15
  * Time: 10:23
- * Desc:
+ * Desc: Redis连接
  */
 
 namespace Redisque;
 
 use Kph\Helpers\ArrayHelper;
+use Kph\Exceptions\BaseException;
 use Kph\Services\BaseService;
 use Redis;
 use RedisException;
@@ -58,9 +59,10 @@ class RedisConn extends BaseService {
     /**
      * 获取redis客户端
      * @param array $conf redis配置
-     * @return array
+     * @return Redis
+     * @throws Throwable
      */
-    public static function getRedis(array $conf): array {
+    public static function getRedis(array $conf): Redis {
         if (empty($conf)) {
             $conf = self::$defaultConf;
         }
@@ -68,10 +70,10 @@ class RedisConn extends BaseService {
 
         $key           = md5(json_encode($conf));
         $now           = time();
-        $conn          = self::$conns[$key] ?? [];
+        $redis         = self::$conns[$key] ?? null;
         $socketTimeout = ini_get('default_socket_timeout');
         $waitTimeout   = intval($conf['wait_timeout'] ?? 120);
-        $lastTime      = $conn['last_connect_time'] ?? 0;
+        $lastTime      = ($redis instanceof RedisClient) ? $redis->getLastConnectTime() : 0;
         $persistentId  = $key; //长连接ID
 
         if ($socketTimeout > 0) {
@@ -80,11 +82,11 @@ class RedisConn extends BaseService {
 
         $maxTime = $lastTime + $waitTimeout;
         $pingRes = false;
-        if ($conn) {
+        if ($redis instanceof Redis) {
             $pingRes = true;
             if (!($now >= $lastTime && $now < $maxTime)) {
                 try {
-                    $ping    = $conn['redis']->ping();
+                    $ping    = $redis->ping('');
                     $pingRes = (strpos($ping, "PONG") !== false);
                 } catch (Throwable $e) {
                     $pingRes = false;
@@ -92,8 +94,8 @@ class RedisConn extends BaseService {
             }
         }
 
-        if (empty($conn) || !$pingRes) {
-            $redis   = new Redis();
+        if (empty($redis) || !$pingRes) {
+            $redis   = new RedisClient();
             $pingRes = $redis->pconnect($conf['host'], $conf['port'], 0, $persistentId);
             if (isset($conf['password']) && !empty($conf['password'])) {
                 $pingRes = $redis->auth($conf['password']);
@@ -103,15 +105,16 @@ class RedisConn extends BaseService {
             $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
             $redis->select($selectDb);
 
-            $conn = [
-                'last_connect_time' => $now,
-                'redis'             => $redis,
-            ];
+            $redis->setLastConnectTime($now);
 
-            self::$conns[$key] = $conn;
+            self::$conns[$key] = $redis;
         }
 
-        return $pingRes ? $conn : [];
+        if (!$pingRes) {
+            throw new BaseException(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $redis;
     }
 
 
