@@ -132,110 +132,292 @@ class RedisQueue extends BaseService implements QueueInterface {
     protected $transTime = 0;
 
 
+    /**
+     * 获取键前缀
+     * @return string
+     */
     public static function getPrefix(): string {
-        // TODO: Implement getPrefix() method.
+        $res = static::getClass();
+        return str_replace('\\', '-', $res);
     }
 
+
+    /**
+     * 获取默认的redis客户端连接
+     * @return Redis
+     * @throws Throwable
+     */
     public static function getRedisDefault(): Redis {
-        // TODO: Implement getRedisDefault() method.
+        return RedisConn::getRedis([]);
     }
 
+
+    /**
+     * 获取队列名哈希表名
+     * @return string
+     */
+    protected static function getQueueTableKey(): string {
+        return self::getPrefix() . self::QUEUE_ALL_NAME;
+    }
+
+
+    /**
+     * 获取所有队列名
+     * @param null|mixed $redis Redis客户端对象
+     * @return array
+     */
     public static function getQueues($redis = null): array {
-        // TODO: Implement getQueues() method.
+        if (empty($redis)) {
+            try {
+                $redis = self::getRedisDefault();
+            } catch (Throwable $e) {
+            }
+        }
+
+        if (!is_object($redis) || !($redis instanceof Redis)) {
+            return [];
+        }
+
+        $key = self::getQueueTableKey();
+        $res = $redis->hGetAll($key);
+        return empty($res) ? [] : (array)$res;
     }
 
+
+    /**
+     * 统计队列数
+     * @param null|mixed $redis Redis客户端对象
+     * @return int
+     */
     public static function countQueues($redis = null): int {
-        // TODO: Implement countQueues() method.
+        if (empty($redis)) {
+            try {
+                $redis = self::getRedisDefault();
+            } catch (Throwable $e) {
+            }
+        }
+
+        if (!is_object($redis) || !($redis instanceof Redis)) {
+            return 0;
+        }
+
+        $key = self::getQueueTableKey();
+        return (int)$redis->hLen($key);
     }
 
+    /**
+     * 检查队列是否存在
+     * @param string $queueName 队列名
+     * @param null|mixed $redis Redis客户端对象
+     * @return bool
+     */
     public static function queueExists(string $queueName, $redis = null): bool {
         // TODO: Implement queueExists() method.
     }
 
+    /**
+     * 获取操作锁
+     * @param string $operation 操作名
+     * @param int $dataId 数据ID
+     * @param int $operateUid 当前操作者UID
+     * @param int $ttl 有效期
+     * @param null|mixed $redis Redis客户端对象
+     * @return int 获取到锁的UID:>0时为本身;<=0时为他人
+     */
     public static function getLockOperate(string $operation, int $dataId, int $operateUid, int $ttl = 60, $redis = null): int {
         // TODO: Implement getLockOperate() method.
     }
 
+    /**
+     * 解锁操作
+     * @param string $operation 操作名
+     * @param int $dataId 数据ID
+     * @param null $redis Redis客户端对象
+     * @return bool
+     */
     public static function unlockOperate(string $operation, int $dataId, $redis = null): bool {
         // TODO: Implement unlockOperate() method.
     }
 
+    /**
+     * 新建队列/设置队列
+     * @param array $conf 队列配置
+     * @return $this
+     * @throws Throwable
+     */
     public function newQueue(array $conf): QueueInterface {
         // TODO: Implement newQueue() method.
     }
 
+    /**
+     * 获取redis客户端连接
+     * @param string $connName 连接名
+     * @return Redis
+     * @throws Throwable
+     */
     public function getRedisClient(string $connName = ''): Redis {
         // TODO: Implement getRedisClient() method.
     }
 
+    /**
+     * 队列头压入一个消息
+     * @param array $msg
+     * @return bool
+     */
     public function add(array $msg): bool {
         // TODO: Implement add() method.
     }
 
+    /**
+     * 队列头压入多个个消息
+     * @param array ...$msgs
+     * @return bool
+     */
     public function addMulti(array ...$msgs): bool {
         // TODO: Implement addMulti() method.
     }
 
+    /**
+     * 队列尾压入一个消息
+     * @param array $msg
+     * @return bool
+     */
     public function push(array $msg): bool {
         // TODO: Implement push() method.
     }
 
+    /**
+     * 队列尾压入多个消息
+     * @param array ...$msgs
+     * @return bool
+     */
     public function pushMulti(array ...$msgs): bool {
         // TODO: Implement pushMulti() method.
     }
 
+    /**
+     * 队列头移出元素
+     * @return mixed
+     */
     public function shift() {
         // TODO: Implement shift() method.
     }
 
+    /**
+     * 队列尾移出元素
+     * @return mixed
+     */
     public function pop() {
         // TODO: Implement pop() method.
     }
 
+    /**
+     * 将中转消息重新加入相应的处理队列
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
+     * @param string $uniqueCode 机器唯一码
+     * @return int
+     */
     public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
         // TODO: Implement transMsgReadd2Queue() method.
     }
 
+    /**
+     * 获取队列信息
+     * @param string $queueName 队列名
+     * @return array
+     */
     public function getQueueInfo(string $queueName = ''): array {
         // TODO: Implement getQueueInfo() method.
     }
 
+    /**
+     * 获取单个消息的中转key
+     * @param array $msg
+     * @return string
+     */
     public function getMsgToTransKey(array $msg): string {
         // TODO: Implement getMsgToTransKey() method.
     }
 
+    /**
+     * 根据中转key获取单个消息
+     * @param string $key
+     * @return array
+     */
     public function getMsgByTransKey(string $key): array {
         // TODO: Implement getMsgByTransKey() method.
     }
 
+    /**
+     * 获取多个消息的中转key
+     * @param array ...$msg
+     * @return array
+     */
     public function getMsgsToTransKeys(array ...$msg): array {
         // TODO: Implement getMsgsToTransKeys() method.
     }
 
+    /**
+     * 根据中转key获取多个消息
+     * @param string ...$key
+     * @return array
+     */
     public function getMsgsByTransKeys(string ...$key): array {
         // TODO: Implement getMsgsByTransKeys() method.
     }
 
+    /**
+     * 将消息加入中转队列
+     * @param array $msg
+     * @return bool
+     */
     public function transfer(array $msg): bool {
         // TODO: Implement transfer() method.
     }
 
+    /**
+     * 消息确认(处理完毕后向队列确认,成功则从中转队列移除;失败则重新加入任务队列;若无确认,消息重新入栈)
+     * @param bool $ok 处理结果:true成功,false失败
+     * @param mixed $msg 消息或该消息的中转key
+     * @return bool
+     */
     public function confirm(bool $ok, $msg): bool {
         // TODO: Implement confirm() method.
     }
 
+    /**
+     * 消息批量确认
+     * @param bool $ok 处理结果:true成功,false失败
+     * @param mixed ...$msgs 消息或该消息的中转key
+     * @return int
+     */
     public function confirmMulti(bool $ok, ...$msgs): int {
         // TODO: Implement confirmMulti() method.
     }
 
+    /**
+     * 获取队列长度
+     * @param string $queueName 队列名
+     * @return int
+     */
     public function len(string $queueName = ''): int {
         // TODO: Implement len() method.
     }
 
+    /**
+     * 清空队列
+     * @param string $queueName 队列名
+     * @return bool
+     */
     public function clear(string $queueName = ''): bool {
         // TODO: Implement clear() method.
     }
 
+    /**
+     * 删除队列
+     * @param string $queueName 队列名
+     * @return bool
+     */
     public function delete(string $queueName = ''): bool {
         // TODO: Implement delete() method.
     }
