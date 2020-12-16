@@ -9,9 +9,11 @@
 
 namespace Redisque;
 
+use Kph\Exceptions\BaseException;
 use Kph\Services\BaseService;
 use Kph\Consts;
 use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 use Redis;
 use RedisException;
@@ -92,7 +94,7 @@ class RedisQueue extends BaseService implements QueueInterface {
 
 
     /**
-     * 所有队列名称的哈希表key
+     * 所有队列名称的哈希表 ['队列名'=>'队列的键']
      */
     const QUEUE_ALL_NAME = 'all_queues';
 
@@ -101,7 +103,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 队列名
      * @var string
      */
-    protected $name = '';
+    protected $queueName = '';
 
 
     /**
@@ -130,6 +132,20 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @var int
      */
     protected $transTime = 0;
+
+
+    /**
+     * redis连接名
+     * @var string
+     */
+    protected $connName = '';
+
+
+    /**
+     * 队列名缓存
+     * @var array
+     */
+    protected static $queueNameCaches = [];
 
 
     /**
@@ -179,6 +195,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         $key = self::getQueueTableKey();
         $res = $redis->hGetAll($key);
+
+
         return empty($res) ? [] : (array)$res;
     }
 
@@ -331,6 +349,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         return $res;
     }
 
+
     /**
      * 新建队列/设置队列
      * @param array $conf 队列配置
@@ -338,7 +357,25 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @throws Throwable
      */
     public function newQueue(array $conf): QueueInterface {
-        // TODO: Implement newQueue() method.
+        $queueName = StringHelper::trim($conf['queueName'] ?? '');
+        $connName  = StringHelper::trim($conf['connName'] ?? '');
+        $isSort    = boolval($conf['isSort'] ?? false);
+        $priority  = intval($conf['priority'] ?? 0);
+        $expire    = intval($conf['expire'] ?? 0);
+        $transTime = intval($conf['transTime'] ?? 0);
+        $priority  = $priority ? 1 : 0;
+
+        if ($expire < 0) {
+            $expire = Consts::TTL_DEFAULT;
+        }
+
+        if ($queueName == '') {
+            throw new BaseException(QueueException::ERR_MESG_QUEUE_NAMEEMPTY, QueueException::ERR_CODE_QUEUE_NAMEEMPTY);
+        }
+
+        $sortType = $isSort ? self::QUEUE_TYPE_ISSORT : self::QUEUE_TYPE_NOSORT;
+
+
     }
 
     /**
@@ -348,8 +385,23 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @throws Throwable
      */
     public function getRedisClient(string $connName = ''): Redis {
-        // TODO: Implement getRedisClient() method.
+        if ($connName == '') {
+            $connName = $this->connName;
+        }
+
+        return self::getRedisDefault();
     }
+
+
+    /**
+     * 获取队列信息
+     * @param string $queueName 队列名
+     * @return array
+     */
+    public function getQueueInfo(string $queueName = ''): array {
+        // TODO: Implement getQueueInfo() method.
+    }
+
 
     /**
      * 队列头压入一个消息
@@ -413,14 +465,6 @@ class RedisQueue extends BaseService implements QueueInterface {
         // TODO: Implement transMsgReadd2Queue() method.
     }
 
-    /**
-     * 获取队列信息
-     * @param string $queueName 队列名
-     * @return array
-     */
-    public function getQueueInfo(string $queueName = ''): array {
-        // TODO: Implement getQueueInfo() method.
-    }
 
     /**
      * 获取单个消息的中转key

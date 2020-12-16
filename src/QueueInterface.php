@@ -60,6 +60,15 @@ interface QueueInterface {
 
 
     /**
+     * 获取队列的键名
+     * @param string $queueName 队列名
+     * @param null|mixed $redis Redis客户端对象
+     * @return bool
+     */
+    public static function getQueueKey(string $queueName, $redis = null): bool;
+
+
+    /**
      * 获取操作锁
      * @param string $operation 操作名
      * @param mixed $dataId 数据ID
@@ -97,6 +106,49 @@ interface QueueInterface {
      * @throws Throwable
      */
     public function getRedisClient(string $connName = ''): Redis;
+
+
+    /**
+     * 获取队列信息
+     * @param string $queueName 队列名
+     * @return array
+     */
+    public function getQueueInfo(string $queueName = ''): array;
+
+
+    /**
+     * 添加队列名
+     * @param string $queueName 队列名
+     * @param string $sortType 排序类型
+     * @param int $priority 是否优先
+     * @return bool
+     */
+    public function addQueueName(string $queueName, string $sortType, int $priority): bool;
+
+
+    /**
+     * 消息是否经过包装
+     * @param array $msg
+     * @return bool
+     */
+    public static function isWraped(array $msg): bool;
+
+
+    /**
+     * (有序队列的)消息包装
+     * @param array $msg 原始消息
+     * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @return array
+     */
+    public function wrapMsg(array $msg, int $weight): array;
+
+
+    /**
+     * 消息解包
+     * @param array $msg 经包装的消息
+     * @return array
+     */
+    public function unwrap(array $msg): array;
 
 
     /**
@@ -152,14 +204,6 @@ interface QueueInterface {
      * @return int
      */
     public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int;
-
-
-    /**
-     * 获取队列信息
-     * @param string $queueName 队列名
-     * @return array
-     */
-    public function getQueueInfo(string $queueName = ''): array;
 
 
     /**
