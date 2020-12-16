@@ -62,23 +62,23 @@ interface QueueInterface {
     /**
      * 获取操作锁
      * @param string $operation 操作名
-     * @param int $dataId 数据ID
+     * @param mixed $dataId 数据ID
      * @param int $operateUid 当前操作者UID
      * @param int $ttl 有效期
      * @param null|mixed $redis Redis客户端对象
      * @return int 获取到锁的UID:>0时为本身;<=0时为他人
      */
-    public static function getLockOperate(string $operation, int $dataId, int $operateUid, int $ttl = 60, $redis = null): int;
+    public static function getLockOperate(string $operation, $dataId, int $operateUid, int $ttl = 60, $redis = null): int;
 
 
     /**
      * 解锁操作
      * @param string $operation 操作名
-     * @param int $dataId 数据ID
-     * @param null $redis Redis客户端对象
+     * @param mixed $dataId 数据ID
+     * @param null|mixed $redis Redis客户端对象
      * @return bool
      */
-    public static function unlockOperate(string $operation, int $dataId, $redis = null): bool;
+    public static function unlockOperate(string $operation, $dataId, $redis = null): bool;
 
 
     /**

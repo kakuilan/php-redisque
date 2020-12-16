@@ -137,7 +137,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return string
      */
     public static function getPrefix(): string {
-        $res = static::getClass();
+        $res = static::getClass() . ':';
         return str_replace('\\', '-', $res);
     }
 
@@ -173,7 +173,6 @@ class RedisQueue extends BaseService implements QueueInterface {
             } catch (Throwable $e) {
             }
         }
-
         if (!is_object($redis) || !($redis instanceof Redis)) {
             return [];
         }
@@ -196,7 +195,6 @@ class RedisQueue extends BaseService implements QueueInterface {
             } catch (Throwable $e) {
             }
         }
-
         if (!is_object($redis) || !($redis instanceof Redis)) {
             return 0;
         }
@@ -219,7 +217,6 @@ class RedisQueue extends BaseService implements QueueInterface {
             } catch (Throwable $e) {
             }
         }
-
         if (!is_object($redis) || !($redis instanceof Redis)) {
             return false;
         }
@@ -228,28 +225,110 @@ class RedisQueue extends BaseService implements QueueInterface {
         return (bool)$redis->hExists($key, $queueName);
     }
 
+
+    /**
+     * 获取操作key
+     * @param string $operation 操作名
+     * @param mixed $dataId 数据ID
+     * @return string
+     */
+    protected static function getOperateKey(string $operation, $dataId): string {
+        $dataId = strval($dataId);
+        return self::getPrefix() . "operate_lock:{$operation}:{$dataId}";
+    }
+
+
     /**
      * 获取操作锁
      * @param string $operation 操作名
-     * @param int $dataId 数据ID
+     * @param mixed $dataId 数据ID
      * @param int $operateUid 当前操作者UID
      * @param int $ttl 有效期
      * @param null|mixed $redis Redis客户端对象
      * @return int 获取到锁的UID:>0时为本身;<=0时为他人
      */
-    public static function getLockOperate(string $operation, int $dataId, int $operateUid, int $ttl = 60, $redis = null): int {
-        // TODO: Implement getLockOperate() method.
+    public static function getLockOperate(string $operation, $dataId, int $operateUid, int $ttl = 60, $redis = null): int {
+        $res    = 0;
+        $dataId = strval($dataId);
+        if ($operation == '' || $dataId == '' || $operateUid <= 0) {
+            return $res;
+        }
+
+        if (empty($redis)) {
+            try {
+                $redis = self::getRedisDefault();
+            } catch (Throwable $e) {
+            }
+        }
+        if (!is_object($redis) || !($redis instanceof Redis)) {
+            return $res;
+        }
+
+        if ($ttl <= 0) {
+            $ttl = 60;
+        }
+
+        $now    = time();
+        $expire = $now + $ttl;
+        $key    = self::getOperateKey($operation, $dataId);
+        $data   = implode('|', [$operateUid, $expire]);
+
+        if ($ret = $redis->setnx($key, $data)) {
+            $redis->expire($key, $ttl);
+            $res = $operateUid;
+        } else {
+            $val = $redis->get($key);
+            $arr = $val ? explode('|', $val) : [];
+            $uid = $arr[0] ?? 0;
+            $exp = $arr[1] ?? 0;
+            if (empty($val) || $uid == 0) {
+                if ($ret = $redis->setnx($key, $data)) {
+                    $redis->expire($key, $ttl);
+                    $res = $operateUid;
+                }
+            } else {
+                if ($uid == $operateUid || ($now > $exp)) {
+                    if ($ret = $redis->setnx($key, $data)) {
+                        $redis->expire($key, $ttl);
+                        $res = $operateUid;
+                    }
+                } else {
+                    $res = -abs($uid);
+                }
+            }
+        }
+
+        return $res;
     }
 
     /**
      * 解锁操作
      * @param string $operation 操作名
-     * @param int $dataId 数据ID
-     * @param null $redis Redis客户端对象
+     * @param mixed $dataId 数据ID
+     * @param null|mixed $redis Redis客户端对象
      * @return bool
      */
-    public static function unlockOperate(string $operation, int $dataId, $redis = null): bool {
-        // TODO: Implement unlockOperate() method.
+    public static function unlockOperate(string $operation, $dataId, $redis = null): bool {
+        $res    = false;
+        $dataId = strval($dataId);
+        if ($operation == '' || $dataId == '') {
+            return $res;
+        }
+
+        if (empty($redis)) {
+            try {
+                $redis = self::getRedisDefault();
+            } catch (Throwable $e) {
+            }
+        }
+        if (!is_object($redis) || !($redis instanceof Redis)) {
+            return $res;
+        }
+
+        $key = self::getOperateKey($operation, $dataId);
+        $res = (int)$redis->del($key);
+
+        return $res;
     }
 
     /**
