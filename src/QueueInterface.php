@@ -45,7 +45,7 @@ interface QueueInterface {
     /**
      * 获取所有队列名
      * @param bool $readCache 是否从缓存读取
-     * @param null $redis Redis客户端对象
+     * @param null|mixed $redis Redis客户端对象
      * @return array
      */
     public static function getQueues(bool $readCache = true, $redis = null): array;
@@ -54,7 +54,7 @@ interface QueueInterface {
     /**
      * 统计队列数
      * @param bool $readCache 是否从缓存读取
-     * @param null $redis Redis客户端对象
+     * @param null|mixed $redis Redis客户端对象
      * @return int
      */
     public static function countQueues(bool $readCache = true, $redis = null): int;
@@ -126,7 +126,7 @@ interface QueueInterface {
     /**
      * 新建队列/设置队列
      * @param array $conf 队列配置
-     * @return $this
+     * @return static
      * @throws Throwable
      */
     public function newQueue(array $conf): self;
