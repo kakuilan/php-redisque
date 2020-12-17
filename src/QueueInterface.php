@@ -27,27 +27,37 @@ interface QueueInterface {
 
 
     /**
+     * 设置默认的redis客户端连接
+     * @param Redis $client 客户端
+     * @return static
+     */
+    public static function setDefaultRedis(Redis $client): self;
+
+
+    /**
      * 获取默认的redis客户端连接
      * @return Redis
      * @throws Throwable
      */
-    public static function getRedisDefault(): Redis;
+    public static function getDefaultRedis(): Redis;
 
 
     /**
      * 获取所有队列名
-     * @param null|mixed $redis Redis客户端对象
+     * @param bool $readCache 是否从缓存读取
+     * @param null $redis Redis客户端对象
      * @return array
      */
-    public static function getQueues($redis = null): array;
+    public static function getQueues(bool $readCache = true, $redis = null): array;
 
 
     /**
      * 统计队列数
-     * @param null|mixed $redis Redis客户端对象
+     * @param bool $readCache 是否从缓存读取
+     * @param null $redis Redis客户端对象
      * @return int
      */
-    public static function countQueues($redis = null): int;
+    public static function countQueues(bool $readCache = true, $redis = null): int;
 
 
     /**
@@ -60,12 +70,35 @@ interface QueueInterface {
 
 
     /**
-     * 获取队列的键名
+     * 获取哈希表(存储全部队列名)的键名
+     * @return string
+     */
+    public static function getTableKey(): string;
+
+
+    /**
+     * 获取(消费)队列的键名
      * @param string $queueName 队列名
      * @param null|mixed $redis Redis客户端对象
-     * @return bool
+     * @return string
      */
-    public static function getQueueKey(string $queueName, $redis = null): bool;
+    public static function getQueueKey(string $queueName, $redis = null): string;
+
+
+    /**
+     * 获取中转哈希表(存储中转消息)的键名
+     * @param int $priority 是否优先
+     * @return string
+     */
+    public static function getTransTableKey(int $priority): string;
+
+
+    /**
+     * 获取中转队列(存储中转消息key)的键名
+     * @param int $priority
+     * @return string
+     */
+    public static function getTransQueueKey(int $priority): string;
 
 
     /**
@@ -117,7 +150,7 @@ interface QueueInterface {
 
 
     /**
-     * 添加队列名
+     * 添加队列名(到哈希表)
      * @param string $queueName 队列名
      * @param string $sortType 排序类型
      * @param int $priority 是否优先
