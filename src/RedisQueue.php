@@ -14,6 +14,7 @@ use Kph\Services\BaseService;
 use Kph\Consts;
 use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\StringHelper;
+use Kph\Helpers\DateHelper;
 use Kph\Helpers\ValidateHelper;
 use Redis;
 use RedisException;
@@ -541,7 +542,10 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public static function isWraped(array $msg): bool {
-        // TODO: Implement isWraped() method.
+        $fields = [self::WRAP_ITEM_FIELD, self::WRAP_WEIGHT_FIELD];
+        $keys   = array_keys($msg);
+
+        return ValidateHelper::isEqualArray($fields, $keys);
     }
 
     /**
@@ -550,8 +554,21 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return array
      */
-    public function wrapMsg(array $msg, int $weight): array {
-        // TODO: Implement wrapMsg() method.
+    public function wrapMsg(array $msg, int $weight = 0): array {
+        if (self::isWraped($msg)) {
+            return $msg;
+        }
+
+        $time   = microtime(true);
+        $sub    = substr($time, 2, 12);
+        $weight = ($weight < 0) ? 0 : min(99, $weight);
+        $score  = 100 - $weight;
+        $score  = $score * pow(10, 8) + $sub;
+
+        return [
+            self::WRAP_ITEM_FIELD   => $msg,
+            self::WRAP_WEIGHT_FIELD => $score,
+        ];
     }
 
     /**
