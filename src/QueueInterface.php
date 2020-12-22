@@ -181,7 +181,7 @@ interface QueueInterface {
      * @param array $msg 经包装的消息
      * @return array
      */
-    public function unwrap(array $msg): array;
+    public function unwrapMsg(array $msg): array;
 
 
     /**

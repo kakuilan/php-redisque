@@ -576,8 +576,12 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param array $msg 经包装的消息
      * @return array
      */
-    public function unwrap(array $msg): array {
-        // TODO: Implement unwrap() method.
+    public function unwrapMsg(array $msg): array {
+        if (!self::isWraped($msg)) {
+            return $msg;
+        }
+
+        return $msg[self::WRAP_ITEM_FIELD];
     }
 
     /**
