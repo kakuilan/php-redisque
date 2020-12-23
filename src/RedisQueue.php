@@ -477,15 +477,20 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return array
      */
     public function getQueueInfo(string $queueName = ''): array {
+        $res = [];
         if ($queueName == '') {
-            return [];
+            $queueName = $this->queueName;
+        }
+        if (empty($queueName)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NAMEEMPTY, QueueException::ERR_CODE_QUEUE_NAMEEMPTY);
+            return $res;
         }
 
         try {
             $client   = $this->getRedisClient($this->connName);
             $queueKey = self::getQueueKey($queueName, $client);
             $arr      = explode(Consts::DELIMITER, $queueKey);
-            if (!empty($arr)) {
+            if (!empty($arr) && is_array($arr)) {
                 [, $queueName, $sortType, $priority] = $arr;
                 $res = [
                     'queueName' => $queueName,
@@ -493,8 +498,11 @@ class RedisQueue extends BaseService implements QueueInterface {
                     'isSort'    => ($sortType == self::QUEUE_TYPE_NOSORT ? false : true),
                     'priority'  => intval($priority),
                 ];
+            } else {
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_INFO_FAIL, QueueException::ERR_CODE_QUEUE_INFO_FAIL);
             }
         } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
         }
 
         return $res;
@@ -591,6 +599,15 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function add(array $msg): bool {
         // TODO: Implement add() method.
+        $res = false;
+        if (empty($msg)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            return $res;
+        }
+
+        $queInfo = $this->getQueueInfo();
+
+
     }
 
     /**

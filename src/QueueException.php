@@ -44,9 +44,21 @@ class QueueException extends BaseException {
 
 
     /**
+     * 错误码-获取队列信息失败
+     */
+    const ERR_CODE_QUEUE_INFO_FAIL = 3;
+
+
+    /**
+     * 错误消息-获取队列信息失败
+     */
+    const ERR_MESG_QUEUE_INFO_FAIL = 'Get the queue info failed:';
+
+
+    /**
      * 错误码-队列存在但类型冲突
      */
-    const ERR_CODE_QUEUE_EXIST_TYPECONFLICT = 3;
+    const ERR_CODE_QUEUE_EXIST_TYPECONFLICT = 4;
 
 
     /**
@@ -58,7 +70,7 @@ class QueueException extends BaseException {
     /**
      * 错误码-队列消息为空
      */
-    const ERR_CODE_QUEUE_MESSAG_EEMPTY = 4;
+    const ERR_CODE_QUEUE_MESSAG_EEMPTY = 5;
 
 
     /**
@@ -70,7 +82,7 @@ class QueueException extends BaseException {
     /**
      * 错误码-队列消息中转失败
      */
-    const ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL = 5;
+    const ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL = 6;
 
 
     /**
@@ -82,7 +94,7 @@ class QueueException extends BaseException {
     /**
      * 错误码-队列消息确认失败
      */
-    const ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL = 6;
+    const ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL = 7;
 
 
     /**
@@ -94,7 +106,7 @@ class QueueException extends BaseException {
     /**
      * 错误码-redis客户端不存在
      */
-    const ERR_CODE_CLIENT_NOTEXIST = 7;
+    const ERR_CODE_CLIENT_NOTEXIST = 8;
 
 
     /**
@@ -106,7 +118,7 @@ class QueueException extends BaseException {
     /**
      * 错误码-redis客户端不能连接
      */
-    const ERR_CODE_CLIENT_CANNOT_CONNECT = 8;
+    const ERR_CODE_CLIENT_CANNOT_CONNECT = 9;
 
 
     /**
