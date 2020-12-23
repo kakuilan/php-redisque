@@ -613,15 +613,20 @@ class RedisQueue extends BaseService implements QueueInterface {
             $client = $this->getRedisClient($this->connName);
             if ($queInfo->isSort) {
                 $msg = self::wrapMsg($msg);
-                $res = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
             } else {
-                $res = $client->lPush($queInfo->queueKey, $msg);
+                $ret = $client->lPush($queInfo->queueKey, $msg);
+            }
+            if ($ret) {
+                $res = true;
+            } else {
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_OPERATE_FAIL, QueueException::ERR_CODE_QUEUE_OPERATE_FAIL);
             }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
         }
 
-        return (bool)$res;
+        return $res;
     }
 
     /**
@@ -630,7 +635,41 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function addMulti(array ...$msgs): bool {
-        // TODO: Implement addMulti() method.
+        $res = false;
+        if (empty($msgs)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            return $res;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return $res;
+        }
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+
+            $client->multi();
+            foreach ($msgs as $msg) {
+                if ($queInfo->isSort) {
+                    $msg = self::wrapMsg($msg);
+                    $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+                } else {
+                    $client->lPush($queInfo->queueKey, $msg);
+                }
+            }
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                $res = true;
+            } else {
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_OPERATE_FAIL, QueueException::ERR_CODE_QUEUE_OPERATE_FAIL);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $res;
     }
 
     /**
