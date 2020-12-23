@@ -474,16 +474,16 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 获取队列信息
      * @param string $queueName 队列名
-     * @return array
+     * @return object
      */
-    public function getQueueInfo(string $queueName = ''): array {
+    public function getQueueInfo(string $queueName = ''): object {
         $res = [];
         if ($queueName == '') {
             $queueName = $this->queueName;
         }
         if (empty($queueName)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NAMEEMPTY, QueueException::ERR_CODE_QUEUE_NAMEEMPTY);
-            return $res;
+            return (object)$res;
         }
 
         try {
@@ -492,12 +492,11 @@ class RedisQueue extends BaseService implements QueueInterface {
             $arr      = explode(Consts::DELIMITER, $queueKey);
             if (!empty($arr) && is_array($arr)) {
                 [, $queueName, $sortType, $priority] = $arr;
-                $res = [
-                    'queueName' => $queueName,
-                    'queueKey'  => $queueKey,
-                    'isSort'    => ($sortType == self::QUEUE_TYPE_NOSORT ? false : true),
-                    'priority'  => intval($priority),
-                ];
+                $res            = new QueueInfo();
+                $res->queueName = $queueName;
+                $res->queueKey  = $queueKey;
+                $res->isSort    = ($sortType == self::QUEUE_TYPE_NOSORT ? false : true);
+                $res->priority  = intval($priority);
             } else {
                 $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_INFO_FAIL, QueueException::ERR_CODE_QUEUE_INFO_FAIL);
             }
@@ -505,7 +504,7 @@ class RedisQueue extends BaseService implements QueueInterface {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
         }
 
-        return $res;
+        return (object)$res;
     }
 
     /**
@@ -562,7 +561,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return array
      */
-    public function wrapMsg(array $msg, int $weight = 0): array {
+    public static function wrapMsg(array $msg, int $weight = 0): array {
         if (self::isWraped($msg)) {
             return $msg;
         }
@@ -584,7 +583,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param array $msg 经包装的消息
      * @return array
      */
-    public function unwrapMsg(array $msg): array {
+    public static function unwrapMsg(array $msg): array {
         if (!self::isWraped($msg)) {
             return $msg;
         }
@@ -598,16 +597,31 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function add(array $msg): bool {
-        // TODO: Implement add() method.
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
             return $res;
         }
 
+        /* @var $queInfo QueueInfo */
         $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return $res;
+        }
 
+        try {
+            $client = $this->getRedisClient($this->connName);
+            if ($queInfo->isSort) {
+                $msg = self::wrapMsg($msg);
+                $res = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+            } else {
+                $res = $client->lPush($queInfo->queueKey, $msg);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
 
+        return (bool)$res;
     }
 
     /**

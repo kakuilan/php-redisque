@@ -144,9 +144,9 @@ interface QueueInterface {
     /**
      * 获取队列信息
      * @param string $queueName 队列名
-     * @return array
+     * @return object
      */
-    public function getQueueInfo(string $queueName = ''): array;
+    public function getQueueInfo(string $queueName = ''): object;
 
 
     /**
@@ -173,7 +173,7 @@ interface QueueInterface {
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return array
      */
-    public function wrapMsg(array $msg, int $weight): array;
+    public static function wrapMsg(array $msg, int $weight): array;
 
 
     /**
@@ -181,7 +181,7 @@ interface QueueInterface {
      * @param array $msg 经包装的消息
      * @return array
      */
-    public function unwrapMsg(array $msg): array;
+    public static function unwrapMsg(array $msg): array;
 
 
     /**
