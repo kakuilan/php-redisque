@@ -579,8 +579,8 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
-     * 消息解包
-     * @param array $msg 经包装的消息
+     * 消息反包装
+     * @param array $msg 经包装的消息unwrapMsg
      * @return array
      */
     public static function unwrapMsg(array $msg): array {

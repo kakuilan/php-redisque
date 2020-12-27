@@ -177,11 +177,27 @@ interface QueueInterface {
 
 
     /**
-     * 消息解包
+     * 消息反包装
      * @param array $msg 经包装的消息
      * @return array
      */
     public static function unwrapMsg(array $msg): array;
+
+
+    /**
+     * 消息打包
+     * @param array $img
+     * @return string
+     */
+    public static function pack(array $img): string;
+
+
+    /**
+     * 消息解包
+     * @param string $msg
+     * @return array
+     */
+    public static function unpack(string $msg): array;
 
 
     /**
