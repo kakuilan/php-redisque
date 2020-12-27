@@ -549,6 +549,10 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public static function isWraped(array $msg): bool {
+        if (!isset($msg[self::WRAP_ITEM_FIELD]) || !isset($msg[self::WRAP_WEIGHT_FIELD])) {
+            return false;
+        }
+
         $fields = [self::WRAP_ITEM_FIELD, self::WRAP_WEIGHT_FIELD];
         $keys   = array_keys($msg);
 
@@ -596,8 +600,12 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param array $msg
      * @return string
      */
-    public static function pack(array $msg): string {
-        return json_encode(self::wrapMsg($msg));
+    public function pack(array $msg): string {
+        if ($this->isSort) {
+            $msg = self::wrapMsg($msg);
+        }
+
+        return json_encode($msg);
     }
 
 
@@ -606,7 +614,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param string $msg
      * @return array
      */
-    public static function unpack(string $msg): array {
+    public function unpack(string $msg): array {
         if (empty($msg) || !ValidateHelper::isJson($msg)) {
             return [];
         }
@@ -633,9 +641,9 @@ class RedisQueue extends BaseService implements QueueInterface {
         }
 
         try {
+            $msg    = $this->pack($msg);
             $client = $this->getRedisClient($this->connName);
             if ($queInfo->isSort) {
-                $msg = self::wrapMsg($msg);
                 $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
             } else {
                 $ret = $client->lPush($queInfo->queueKey, $msg);
@@ -675,8 +683,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
             $client->multi();
             foreach ($msgs as $msg) {
+                $msg = $this->pack($msg);
                 if ($queInfo->isSort) {
-                    $msg = self::wrapMsg($msg);
                     $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
                 } else {
                     $client->lPush($queInfo->queueKey, $msg);
@@ -715,9 +723,9 @@ class RedisQueue extends BaseService implements QueueInterface {
         }
 
         try {
+            $msg    = $this->pack($msg);
             $client = $this->getRedisClient($this->connName);
             if ($queInfo->isSort) {
-                $msg = self::wrapMsg($msg);
                 $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
             } else {
                 $ret = $client->rPush($queInfo->queueKey, $msg);

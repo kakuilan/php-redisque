@@ -189,7 +189,7 @@ interface QueueInterface {
      * @param array $msg
      * @return string
      */
-    public static function pack(array $msg): string;
+    public function pack(array $msg): string;
 
 
     /**
@@ -197,7 +197,7 @@ interface QueueInterface {
      * @param string $msg
      * @return array
      */
-    public static function unpack(string $msg): array;
+    public function unpack(string $msg): array;
 
 
     /**
