@@ -186,10 +186,10 @@ interface QueueInterface {
 
     /**
      * 消息打包
-     * @param array $img
+     * @param array $msg
      * @return string
      */
-    public static function pack(array $img): string;
+    public static function pack(array $msg): string;
 
 
     /**

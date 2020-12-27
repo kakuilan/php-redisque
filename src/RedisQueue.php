@@ -592,6 +592,29 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
+     * 消息打包
+     * @param array $msg
+     * @return string
+     */
+    public static function pack(array $msg): string {
+        return json_encode(self::wrapMsg($msg));
+    }
+
+
+    /**
+     * 消息解包
+     * @param string $msg
+     * @return array
+     */
+    public static function unpack(string $msg): array {
+        if (empty($msg) || !ValidateHelper::isJson($msg)) {
+            return [];
+        }
+
+        return self::unwrapMsg(json_decode($msg, true));
+    }
+
+    /**
      * 队列头压入一个消息
      * @param array $msg
      * @return bool
