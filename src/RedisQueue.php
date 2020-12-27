@@ -679,6 +679,36 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function push(array $msg): bool {
         // TODO: Implement push() method.
+        $res = false;
+        if (empty($msg)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            return $res;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return $res;
+        }
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+            if ($queInfo->isSort) {
+                $msg = self::wrapMsg($msg);
+                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+            } else {
+                $ret = $client->rPush($queInfo->queueKey, $msg);
+            }
+            if ($ret) {
+                $res = true;
+            } else {
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_OPERATE_FAIL, QueueException::ERR_CODE_QUEUE_OPERATE_FAIL);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $res;
     }
 
     /**
