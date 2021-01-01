@@ -799,23 +799,23 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         try {
             $client = $this->getRedisClient($this->connName);
-            if($this->len()==0) {
+            if ($this->len() == 0) {
                 return $res;
             }
 
-            if($queInfo->isSort) {
+            if ($queInfo->isSort) {
                 $arr = $client->zRange($queInfo->queueKey, 0, 0); //从小到大排
-                if(!empty($arr)) {
+                if (!empty($arr)) {
                     $res = current($arr);
                 }
-            }else{
+            } else {
                 $res = $client->lPop($queInfo->queueKey);
             }
 
-            if($res) {
-                $arr = $this->unpack(strval($res));
+            if ($res) {
+                $arr     = $this->unpack(strval($res));
                 $tranRes = $this->transfer($arr);
-                $res = ($arr && $tranRes) ? $arr : null;
+                $res     = ($arr && $tranRes) ? $arr : null;
             }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
@@ -839,23 +839,23 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         try {
             $client = $this->getRedisClient($this->connName);
-            if($this->len()==0) {
+            if ($this->len() == 0) {
                 return $res;
             }
 
-            if($queInfo->isSort) {
+            if ($queInfo->isSort) {
                 $arr = $client->zRevRange($queInfo->queueKey, 0, 0); //从大到小排
-                if(!empty($arr)) {
+                if (!empty($arr)) {
                     $res = current($arr);
                 }
-            }else{
+            } else {
                 $res = $client->rPop($queInfo->queueKey);
             }
 
-            if($res) {
-                $arr = $this->unpack(strval($res));
+            if ($res) {
+                $arr     = $this->unpack(strval($res));
                 $tranRes = $this->transfer($arr);
-                $res = ($arr && $tranRes) ? $arr : null;
+                $res     = ($arr && $tranRes) ? $arr : null;
             }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
@@ -865,22 +865,22 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
-     * 将中转消息重新加入相应的处理队列
-     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
-     * @param string $uniqueCode 机器唯一码
-     * @return int
-     */
-    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
-        // TODO: Implement transMsgReadd2Queue() method.
-    }
-
-    /**
      * 获取单个消息的中转key
      * @param array $msg
+     * @param string $queueName
      * @return string
      */
-    public function getMsgToTransKey(array $msg): string {
-        // TODO: Implement getMsgToTransKey() method.
+    public function getMsgToTransKey(array $msg, string $queueName = ''): string {
+        if ($queueName == '') {
+            $queueName = $this->queueName;
+        }
+
+        $data = [
+            'queue' => $queueName,
+            'msg'   => $msg,
+        ];
+
+        return md5(json_encode($data));
     }
 
     /**
@@ -894,10 +894,11 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 获取多个消息的中转key
+     * @param string $queueName
      * @param array ...$msg
      * @return array
      */
-    public function getMsgsToTransKeys(array ...$msg): array {
+    public function getMsgsToTransKeys(string $queueName, array ...$msg): array {
         // TODO: Implement getMsgsToTransKeys() method.
     }
 
@@ -917,6 +918,16 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function transfer(array $msg): bool {
         // TODO: Implement transfer() method.
+    }
+
+    /**
+     * 将中转消息重新加入相应的处理队列
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
+     * @param string $uniqueCode 机器唯一码
+     * @return int
+     */
+    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
+        // TODO: Implement transMsgReadd2Queue() method.
     }
 
     /**
