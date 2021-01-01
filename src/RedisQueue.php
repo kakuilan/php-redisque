@@ -829,7 +829,39 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return mixed
      */
     public function pop() {
-        // TODO: Implement pop() method.
+        $res = null;
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return $res;
+        }
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+            if($this->len()==0) {
+                return $res;
+            }
+
+            if($queInfo->isSort) {
+                $arr = $client->zRevRange($queInfo->queueKey, 0, 0); //从大到小排
+                if(!empty($arr)) {
+                    $res = current($arr);
+                }
+            }else{
+                $res = $client->rPop($queInfo->queueKey);
+            }
+
+            if($res) {
+                $arr = $this->unpack(strval($res));
+                $tranRes = $this->transfer($arr);
+                $res = ($arr && $tranRes) ? $arr : null;
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $res;
     }
 
     /**
