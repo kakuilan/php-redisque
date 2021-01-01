@@ -641,12 +641,12 @@ class RedisQueue extends BaseService implements QueueInterface {
         }
 
         try {
-            $msg    = $this->pack($msg);
             $client = $this->getRedisClient($this->connName);
             if ($queInfo->isSort) {
-                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+                $msg = self::wrapMsg($msg);
+                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
             } else {
-                $ret = $client->lPush($queInfo->queueKey, $msg);
+                $ret = $client->lPush($queInfo->queueKey, $this->pack($msg));
             }
             if ($ret) {
                 $res = true;
@@ -683,11 +683,11 @@ class RedisQueue extends BaseService implements QueueInterface {
 
             $client->multi();
             foreach ($msgs as $msg) {
-                $msg = $this->pack($msg);
                 if ($queInfo->isSort) {
-                    $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+                    $msg = self::wrapMsg($msg);
+                    $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
                 } else {
-                    $client->lPush($queInfo->queueKey, $msg);
+                    $client->lPush($queInfo->queueKey, $this->pack($msg));
                 }
             }
             $mulRes = $client->exec();
@@ -709,7 +709,6 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function push(array $msg): bool {
-        // TODO: Implement push() method.
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
@@ -723,12 +722,12 @@ class RedisQueue extends BaseService implements QueueInterface {
         }
 
         try {
-            $msg    = $this->pack($msg);
             $client = $this->getRedisClient($this->connName);
             if ($queInfo->isSort) {
-                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $msg);
+                $msg = self::wrapMsg($msg);
+                $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
             } else {
-                $ret = $client->rPush($queInfo->queueKey, $msg);
+                $ret = $client->rPush($queInfo->queueKey, $this->pack($msg));
             }
             if ($ret) {
                 $res = true;
