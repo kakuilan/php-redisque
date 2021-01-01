@@ -247,20 +247,12 @@ interface QueueInterface {
 
 
     /**
-     * 将中转消息重新加入相应的处理队列
-     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
-     * @param string $uniqueCode 机器唯一码
-     * @return int
-     */
-    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int;
-
-
-    /**
      * 获取单个消息的中转key
      * @param array $msg
+     * @param string $queueName
      * @return string
      */
-    public function getMsgToTransKey(array $msg): string;
+    public function getMsgToTransKey(array $msg, string $queueName = ''): string;
 
 
     /**
@@ -273,10 +265,11 @@ interface QueueInterface {
 
     /**
      * 获取多个消息的中转key
+     * @param string $queueName
      * @param array ...$msg
      * @return array
      */
-    public function getMsgsToTransKeys(array ...$msg): array;
+    public function getMsgsToTransKeys(string $queueName, array ...$msg): array;
 
 
     /**
@@ -293,6 +286,15 @@ interface QueueInterface {
      * @return bool
      */
     public function transfer(array $msg): bool;
+
+
+    /**
+     * 将中转消息重新加入相应的处理队列
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
+     * @param string $uniqueCode 机器唯一码
+     * @return int
+     */
+    public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int;
 
 
     /**
