@@ -258,9 +258,10 @@ interface QueueInterface {
     /**
      * 根据中转key获取单个消息
      * @param string $key
+     * @param string $queueName
      * @return array
      */
-    public function getMsgByTransKey(string $key): array;
+    public function getMsgByTransKey(string $key, string $queueName = ''): array;
 
 
     /**
