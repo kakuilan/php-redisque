@@ -896,11 +896,25 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 获取多个消息的中转key
      * @param string $queueName
-     * @param array ...$msg
+     * @param array ...$msgs
      * @return array
      */
-    public function getMsgsToTransKeys(string $queueName, array ...$msg): array {
-        // TODO: Implement getMsgsToTransKeys() method.
+    public function getMsgsToTransKeys(string $queueName, array ...$msgs): array {
+        if ($queueName == '') {
+            $queueName = $this->queueName;
+        }
+
+        $res = [];
+        foreach ($msgs as $msg) {
+            $item = [
+                'queue' => $queueName,
+                'msg'   => $msg,
+            ];
+            $key  = md5(json_encode($item));
+            array_push($res, $key);
+        }
+
+        return $res;
     }
 
     /**
