@@ -154,10 +154,9 @@ interface QueueInterface {
      * @param string $queueName 队列名
      * @param string $sortType 排序类型
      * @param int $priority 是否优先
-     * @param int $expire 消息有效期,秒
      * @return bool
      */
-    public function addQueueName(string $queueName, string $sortType, int $priority, int $expire = 0): bool;
+    public function addQueueName(string $queueName, string $sortType, int $priority): bool;
 
 
     /**

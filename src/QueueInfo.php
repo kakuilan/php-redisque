@@ -33,24 +33,18 @@ class QueueInfo extends StrictObject {
 
 
     /**
-     * 是否排序队列
+     * 是否有序队列
      * @var bool
      */
     public $isSort = false;
 
 
     /**
-     * 队列优先级
+     * 是否优先队列
      * @var int
      */
     public $priority = 0;
 
-
-    /**
-     * 消息有效期,秒;默认0,永久
-     * @var int
-     */
-    public $expire = 0;
 
 
 }
