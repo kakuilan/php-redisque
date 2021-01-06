@@ -436,13 +436,14 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @throws Throwable
      */
     public function newQueue(array $conf): QueueInterface {
-        $queueName = StringHelper::trim($conf['queueName'] ?? '');
-        $connName  = StringHelper::trim($conf['connName'] ?? '');
-        $isSort    = boolval($conf['isSort'] ?? false);
-        $priority  = intval($conf['priority'] ?? 0);
-        $expire    = intval($conf['expire'] ?? 0);
-        $transTime = intval($conf['transTime'] ?? 0);
-        $priority  = $priority ? self::QUEUE_PRIORITY_IS : self::QUEUE_PRIORITY_NO;
+        $queueName = StringHelper::trim($conf['queueName'] ?? ''); //队列名
+        $connName  = StringHelper::trim($conf['connName'] ?? ''); //Redis连接名
+        $isSort    = boolval($conf['isSort'] ?? false); //是否有序队列
+        $priority  = intval($conf['priority'] ?? 0); //是否优先队列
+        $expire    = intval($conf['expire'] ?? 0); //消息有效期
+
+        $priority = $priority ? self::QUEUE_PRIORITY_IS : self::QUEUE_PRIORITY_NO;
+        $sortType = $isSort ? self::QUEUE_TYPE_ISSORT : self::QUEUE_TYPE_NOSORT;
 
         if ($expire < 0) {
             $expire = Consts::TTL_DEFAULT;
@@ -452,9 +453,24 @@ class RedisQueue extends BaseService implements QueueInterface {
             throw new BaseException(QueueException::ERR_MESG_QUEUE_NAMEEMPTY, QueueException::ERR_CODE_QUEUE_NAMEEMPTY);
         }
 
-        $sortType = $isSort ? self::QUEUE_TYPE_ISSORT : self::QUEUE_TYPE_NOSORT;
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $ret = $this->addQueueName($queueName, $sortType, $priority);
+            if (!$ret) {
+                throw new QueueException($this->getError(), $this->getErrno());
+            }
+        } elseif ($queInfo->isSort !== $isSort || $queInfo->priority !== $priority) {
+            throw new BaseException(QueueException::ERR_MESG_QUEUE_EXIST_TYPECONFLICT, QueueException::ERR_CODE_QUEUE_EXIST_TYPECONFLICT);
+        }
 
+        $this->queueName = $queueName;
+        $this->connName  = $connName;
+        $this->isSort    = $isSort;
+        $this->priority  = $priority;
+        $this->expire    = $expire;
 
+        return $this;
     }
 
     /**
@@ -491,12 +507,13 @@ class RedisQueue extends BaseService implements QueueInterface {
             $queueKey = self::getQueueKey($queueName, $client);
             $arr      = explode(Consts::DELIMITER, $queueKey);
             if (!empty($arr) && is_array($arr)) {
-                [, $queueName, $sortType, $priority] = $arr;
+                [, $queueName, $sortType, $priority, $expire] = $arr;
                 $res            = new QueueInfo();
                 $res->queueName = $queueName;
                 $res->queueKey  = $queueKey;
                 $res->isSort    = ($sortType == self::QUEUE_TYPE_NOSORT ? false : true);
                 $res->priority  = intval($priority);
+                $res->expire    = intval($expire);
             } else {
                 $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_INFO_FAIL, QueueException::ERR_CODE_QUEUE_INFO_FAIL);
             }
