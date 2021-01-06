@@ -46,4 +46,11 @@ class QueueInfo extends StrictObject {
     public $priority = 0;
 
 
+    /**
+     * 消息有效期,秒;默认0,永久
+     * @var int
+     */
+    public $expire = 0;
+
+
 }
