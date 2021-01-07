@@ -171,9 +171,10 @@ interface QueueInterface {
      * (有序队列的)消息包装
      * @param array $msg 原始消息
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param int $expire 消息有效期(秒);默认0,为永久
      * @return array
      */
-    public static function wrapMsg(array $msg, int $weight): array;
+    public static function wrapMsg(array $msg, int $weight, int $expire = 0): array;
 
 
     /**
@@ -203,9 +204,10 @@ interface QueueInterface {
     /**
      * 队列头压入一个消息
      * @param array $msg
+     * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return bool
      */
-    public function add(array $msg): bool;
+    public function add(array $msg, int $weight = 0): bool;
 
 
     /**
@@ -219,9 +221,10 @@ interface QueueInterface {
     /**
      * 队列尾压入一个消息
      * @param array $msg
+     * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return bool
      */
-    public function push(array $msg): bool;
+    public function push(array $msg, int $weight = 0): bool;
 
 
     /**
