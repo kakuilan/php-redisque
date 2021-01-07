@@ -107,6 +107,12 @@ class RedisQueue extends BaseService implements QueueInterface {
 
 
     /**
+     * 包装消息的有效期字段名
+     */
+    const WRAP_EXPIRE_FIELD = 'queMsgExpire';
+
+
+    /**
      * 队列名
      * @var string
      */
@@ -135,7 +141,7 @@ class RedisQueue extends BaseService implements QueueInterface {
 
 
     /**
-     * 中转队列重新入栈时间
+     * 中转队列重新入栈时间,秒
      * @var int
      */
     protected $transTime = 0;
@@ -150,7 +156,7 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 默认的redis客户端
-     * @var null
+     * @var null|Redis
      */
     protected static $redis = null;
 
@@ -441,12 +447,16 @@ class RedisQueue extends BaseService implements QueueInterface {
         $isSort    = boolval($conf['isSort'] ?? false); //是否有序队列
         $priority  = intval($conf['priority'] ?? 0); //是否优先队列
         $expire    = intval($conf['expire'] ?? 0); //消息有效期
+        $transTime = intval($conf['transTime'] ?? 0); //处理中转队列的时间
 
         $priority = $priority ? self::QUEUE_PRIORITY_IS : self::QUEUE_PRIORITY_NO;
         $sortType = $isSort ? self::QUEUE_TYPE_ISSORT : self::QUEUE_TYPE_NOSORT;
 
         if ($expire < 0) {
             $expire = Consts::TTL_DEFAULT;
+        }
+        if ($transTime <= 0) {
+            $transTime = Consts::TTL_DEFAULT;
         }
 
         if ($queueName == '') {
@@ -469,6 +479,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         $this->isSort    = $isSort;
         $this->priority  = $priority;
         $this->expire    = $expire;
+        $this->transTime = $transTime;
 
         return $this;
     }
@@ -566,11 +577,11 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public static function isWraped(array $msg): bool {
-        if (!isset($msg[self::WRAP_ITEM_FIELD]) || !isset($msg[self::WRAP_WEIGHT_FIELD])) {
+        if (!isset($msg[self::WRAP_ITEM_FIELD]) || !isset($msg[self::WRAP_WEIGHT_FIELD]) || !isset($msg[self::WRAP_EXPIRE_FIELD])) {
             return false;
         }
 
-        $fields = [self::WRAP_ITEM_FIELD, self::WRAP_WEIGHT_FIELD];
+        $fields = [self::WRAP_ITEM_FIELD, self::WRAP_WEIGHT_FIELD, self::WRAP_EXPIRE_FIELD];
         $keys   = array_keys($msg);
 
         return ValidateHelper::isEqualArray($fields, $keys);
@@ -580,9 +591,10 @@ class RedisQueue extends BaseService implements QueueInterface {
      * (有序队列的)消息包装
      * @param array $msg 原始消息
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param int $expire 消息有效期(秒);默认0,为永久
      * @return array
      */
-    public static function wrapMsg(array $msg, int $weight = 0): array {
+    public static function wrapMsg(array $msg, int $weight = 0, int $expire = 0): array {
         if (self::isWraped($msg)) {
             return $msg;
         }
@@ -593,9 +605,16 @@ class RedisQueue extends BaseService implements QueueInterface {
         $score  = 100 - $weight;
         $score  = $score * pow(10, 8) + $sub;
 
+        if ($expire > 0) {
+            $expire += time();
+        } else {
+            $expire = 0;
+        }
+
         return [
             self::WRAP_ITEM_FIELD   => $msg,
             self::WRAP_WEIGHT_FIELD => $score,
+            self::WRAP_EXPIRE_FIELD => $expire,
         ];
     }
 
@@ -618,8 +637,8 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return string
      */
     public function pack(array $msg): string {
-        if ($this->isSort) {
-            $msg = self::wrapMsg($msg);
+        if (!self::isWraped($msg)) {
+            $msg = self::wrapMsg($msg, 0, $this->expire);
         }
 
         return json_encode($msg);
@@ -642,9 +661,10 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 队列头压入一个消息
      * @param array $msg
+     * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return bool
      */
-    public function add(array $msg): bool {
+    public function add(array $msg, int $weight = 0): bool {
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
@@ -659,8 +679,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         try {
             $client = $this->getRedisClient($this->connName);
+            $msg    = self::wrapMsg($msg, $weight, $this->expire);
             if ($queInfo->isSort) {
-                $msg = self::wrapMsg($msg);
                 $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
             } else {
                 $ret = $client->lPush($queInfo->queueKey, $this->pack($msg));
@@ -700,8 +720,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
             $client->multi();
             foreach ($msgs as $msg) {
+                $msg = self::wrapMsg($msg, 0, $this->expire);
                 if ($queInfo->isSort) {
-                    $msg = self::wrapMsg($msg);
                     $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
                 } else {
                     $client->lPush($queInfo->queueKey, $this->pack($msg));
@@ -723,9 +743,10 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 队列尾压入一个消息
      * @param array $msg
+     * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
      * @return bool
      */
-    public function push(array $msg): bool {
+    public function push(array $msg, int $weight = 0): bool {
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
@@ -740,8 +761,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         try {
             $client = $this->getRedisClient($this->connName);
+            $msg    = self::wrapMsg($msg, $weight, $this->expire);
             if ($queInfo->isSort) {
-                $msg = self::wrapMsg($msg);
                 $ret = $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
             } else {
                 $ret = $client->rPush($queInfo->queueKey, $this->pack($msg));
@@ -781,8 +802,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
             $client->multi();
             foreach ($msgs as $msg) {
+                $msg = self::wrapMsg($msg, 0, $this->expire);
                 if ($queInfo->isSort) {
-                    $msg = self::wrapMsg($msg);
                     $client->zAdd($queInfo->queueKey, $msg[self::WRAP_WEIGHT_FIELD], $this->pack($msg));
                 } else {
                     $client->rPush($queInfo->queueKey, $this->pack($msg));
