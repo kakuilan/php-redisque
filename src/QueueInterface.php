@@ -1,7 +1,7 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Administrator
+ * Copyright (c) 2020 LKK All rights reserved
+ * User: kakuilan
  * Date: 2020/12/8
  * Time: 11:40
  * Desc: 队列接口

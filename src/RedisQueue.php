@@ -1,7 +1,7 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Administrator
+ * Copyright (c) 2020 LKK All rights reserved
+ * User: kakuilan
  * Date: 2020/7/18
  * Time: 20:04
  * Desc: Redis队列
