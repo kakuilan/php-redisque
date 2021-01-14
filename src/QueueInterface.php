@@ -196,9 +196,10 @@ interface QueueInterface {
     /**
      * 消息解包
      * @param string $msg
+     * @param bool $unwrap 是否解包装
      * @return array
      */
-    public function unpack(string $msg): array;
+    public function unpack(string $msg, bool $unwrap = false): array;
 
 
     /**

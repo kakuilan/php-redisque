@@ -648,14 +648,20 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 消息解包
      * @param string $msg
+     * @param bool $unwrap 是否解包装
      * @return array
      */
-    public function unpack(string $msg): array {
+    public function unpack(string $msg, bool $unwrap = false): array {
         if (empty($msg) || !ValidateHelper::isJson($msg)) {
             return [];
         }
 
-        return self::unwrapMsg(json_decode($msg, true));
+        $res = json_decode($msg, true);
+        if ($unwrap) {
+            $res = self::unwrapMsg($res);
+        }
+
+        return $res;
     }
 
     /**
@@ -1034,6 +1040,26 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function transfer(array $msg, string $queueName = ''): bool {
         // TODO: Implement transfer() method.
+        if (empty($msg)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            return false;
+        }
+
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return false;
+        }
+
+        if (!self::isWraped($msg)) {
+            $msg = self::wrapMsg($msg);
+        }
+
+
     }
 
     /**
