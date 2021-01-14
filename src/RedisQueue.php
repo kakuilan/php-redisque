@@ -928,7 +928,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 根据中转key获取单个消息
      * @param string $key 消息中转key
-     * @param string $queueName 该消息所在的队列名
+     * @param string $queueName 消息所在的队列名
      * @return array
      */
     public function getMsgByTransKey(string $key, string $queueName = ''): array {
@@ -962,7 +962,7 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 获取多个消息的中转key
-     * @param string $queueName
+     * @param string $queueName 消息所在的队列名
      * @param array ...$msgs
      * @return array
      */
@@ -990,12 +990,40 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 根据中转key获取多个消息
-     * @param string $queueName
-     * @param string ...$key
+     * @param string $queueName 消息所在的队列名
+     * @param string ...$keys
      * @return array
      */
-    public function getMsgsByTransKeys(string $queueName, string ...$key): array {
-        // TODO: Implement getMsgsByTransKeys() method.
+    public function getMsgsByTransKeys(string $queueName, string ...$keys): array {
+        if ($queueName == '') {
+            $queueName = $this->queueName;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            return [];
+        }
+
+        $res      = [];
+        $tableKey = self::getTransTableKey($queInfo->priority);
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $arr    = $client->hMGet($tableKey, $keys);
+            if (!empty($arr)) {
+                foreach ($arr as $k => &$v) {
+                    if (!empty($v) && ValidateHelper::isJson(strval($v))) {
+                        $v = json_decode($v, true);
+                    } else {
+                        $v = [];
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $res;
     }
 
     /**
