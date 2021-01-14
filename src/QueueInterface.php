@@ -288,9 +288,10 @@ interface QueueInterface {
     /**
      * 将消息加入中转队列
      * @param array $msg
+     * @param string $queueName
      * @return bool
      */
-    public function transfer(array $msg): bool;
+    public function transfer(array $msg, string $queueName = ''): bool;
 
 
     /**

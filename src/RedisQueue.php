@@ -1000,10 +1000,11 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 将消息加入中转队列
+     * @param string $queueName
      * @param array $msg
      * @return bool
      */
-    public function transfer(array $msg): bool {
+    public function transfer(array $msg, string $queueName = ''): bool {
         // TODO: Implement transfer() method.
     }
 
