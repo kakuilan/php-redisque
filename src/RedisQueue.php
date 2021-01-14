@@ -913,6 +913,10 @@ class RedisQueue extends BaseService implements QueueInterface {
             $queueName = $this->queueName;
         }
 
+        if (self::isWraped($msg)) {
+            $msg = self::unwrapMsg($msg);
+        }
+
         $data = [
             'queue' => $queueName,
             'msg'   => $msg,
@@ -944,6 +948,10 @@ class RedisQueue extends BaseService implements QueueInterface {
 
         $res = [];
         foreach ($msgs as $msg) {
+            if (self::isWraped($msg)) {
+                $msg = self::unwrapMsg($msg);
+            }
+
             $item = [
                 'queue' => $queueName,
                 'msg'   => $msg,
