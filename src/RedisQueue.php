@@ -113,6 +113,18 @@ class RedisQueue extends BaseService implements QueueInterface {
 
 
     /**
+     * 中转消息的队列名字段名
+     */
+    const TRAN_NAME_FIELD = 'queue';
+
+
+    /**
+     * 中转消息的实际消息字段名
+     */
+    const TRAN_ITEM_FIELD = 'msg';
+
+
+    /**
      * 队列名
      * @var string
      */
@@ -924,15 +936,15 @@ class RedisQueue extends BaseService implements QueueInterface {
         }
 
         $data = [
-            'queue' => $queueName,
-            'msg'   => $msg,
+            self::TRAN_NAME_FIELD => $queueName,
+            self::TRAN_ITEM_FIELD => $msg,
         ];
 
         return md5(json_encode($data));
     }
 
     /**
-     * 根据中转key获取单个消息
+     * 根据中转key获取单个中转消息
      * @param string $key 消息中转key
      * @param string $queueName 消息所在的队列名
      * @return array
@@ -984,8 +996,8 @@ class RedisQueue extends BaseService implements QueueInterface {
             }
 
             $item = [
-                'queue' => $queueName,
-                'msg'   => $msg,
+                self::TRAN_NAME_FIELD => $queueName,
+                self::TRAN_ITEM_FIELD => $msg,
             ];
             $key  = md5(json_encode($item));
             array_push($res, $key);
@@ -995,7 +1007,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
-     * 根据中转key获取多个消息
+     * 根据中转key获取多个中转消息
      * @param string $queueName 消息所在的队列名
      * @param string ...$keys
      * @return array
@@ -1039,7 +1051,6 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function transfer(array $msg, string $queueName = ''): bool {
-        // TODO: Implement transfer() method.
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
             return false;
@@ -1052,6 +1063,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         /* @var $queInfo QueueInfo */
         $queInfo = $this->getQueueInfo($queueName);
         if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_TRANSFERFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL);
             return false;
         }
 
@@ -1059,7 +1071,37 @@ class RedisQueue extends BaseService implements QueueInterface {
             $msg = self::wrapMsg($msg);
         }
 
+        $score  = microtime(true);
+        $queKey = self::getTransQueueKey($queInfo->priority);
+        $tabKey = self::getTransTableKey($queInfo->priority);
+        $iteKey = self::getMsgToTransKey($msg);
 
+        $data = [
+            self::TRAN_NAME_FIELD => $queueName,
+            self::TRAN_ITEM_FIELD => $msg,
+        ];
+        $item = serialize($data);
+
+        //redis事务
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $client->multi();
+            $client->zAdd($queKey, $score, $iteKey);
+            $client->hSet($tabKey, $iteKey, $item);
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                $res = true;
+            } else {
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_TRANSFERFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL);
+                $client->hDel($tabKey, $iteKey);
+                $client->zRem($queKey, $iteKey);
+                //TODO 重新入栈
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
 
     /**

@@ -260,7 +260,7 @@ interface QueueInterface {
 
 
     /**
-     * 根据中转key获取单个消息
+     * 根据中转key获取单个中转消息
      * @param string $key
      * @param string $queueName
      * @return array
@@ -278,7 +278,7 @@ interface QueueInterface {
 
 
     /**
-     * 根据中转key获取多个消息
+     * 根据中转key获取多个中转消息
      * @param string $queueName
      * @param string ...$keys
      * @return array
