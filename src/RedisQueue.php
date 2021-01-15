@@ -1103,7 +1103,9 @@ class RedisQueue extends BaseService implements QueueInterface {
                 $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_TRANSFERFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL);
                 $client->hDel($tabKey, $iteKey);
                 $client->zRem($queKey, $iteKey);
-                //TODO 重新入栈
+
+                //重新入栈
+                $this->push($msg);
             }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
