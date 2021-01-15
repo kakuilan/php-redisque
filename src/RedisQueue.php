@@ -680,17 +680,21 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 队列头压入一个消息
      * @param array $msg
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param string $queueName 队列名
      * @return bool
      */
-    public function add(array $msg, int $weight = 0): bool {
+    public function add(array $msg, int $weight = 0, string $queueName = ''): bool {
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
             return $res;
         }
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
 
         /* @var $queInfo QueueInfo */
-        $queInfo = $this->getQueueInfo();
+        $queInfo = $this->getQueueInfo($queueName);
         if (ValidateHelper::isEmptyObject($queInfo)) {
             return $res;
         }
@@ -762,17 +766,21 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 队列尾压入一个消息
      * @param array $msg
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param string $queueName 队列名
      * @return bool
      */
-    public function push(array $msg, int $weight = 0): bool {
+    public function push(array $msg, int $weight = 0, string $queueName = ''): bool {
         $res = false;
         if (empty($msg)) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
             return $res;
         }
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
 
         /* @var $queInfo QueueInfo */
-        $queInfo = $this->getQueueInfo();
+        $queInfo = $this->getQueueInfo($queueName);
         if (ValidateHelper::isEmptyObject($queInfo)) {
             return $res;
         }
@@ -1046,8 +1054,8 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 将消息加入中转队列
-     * @param string $queueName
      * @param array $msg
+     * @param string $queueName
      * @return bool
      */
     public function transfer(array $msg, string $queueName = ''): bool {

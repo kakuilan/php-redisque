@@ -206,9 +206,10 @@ interface QueueInterface {
      * 队列头压入一个消息
      * @param array $msg
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param string $queueName 队列名
      * @return bool
      */
-    public function add(array $msg, int $weight = 0): bool;
+    public function add(array $msg, int $weight = 0, string $queueName = ''): bool;
 
 
     /**
@@ -223,9 +224,10 @@ interface QueueInterface {
      * 队列尾压入一个消息
      * @param array $msg
      * @param int $weight 权重,0~99,值越大在队列中越排前,仅对有序队列起作用
+     * @param string $queueName 队列名
      * @return bool
      */
-    public function push(array $msg, int $weight = 0): bool;
+    public function push(array $msg, int $weight = 0, string $queueName = ''): bool;
 
 
     /**
