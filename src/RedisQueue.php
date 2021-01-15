@@ -976,9 +976,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         try {
             $client = $this->getRedisClient($this->connName);
             $str    = $client->hGet($tableKey, $key);
-            if (!empty($str) && ValidateHelper::isJson(strval($str))) {
-                $res = json_decode($str, true);
-            }
+            $res    = unserialize($str);
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
         }
@@ -1018,7 +1016,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 根据中转key获取多个中转消息
      * @param string $queueName 消息所在的队列名
      * @param string ...$keys
-     * @return array
+     * @return array key=>msg键值对
      */
     public function getMsgsByTransKeys(string $queueName, string ...$keys): array {
         if ($queueName == '') {
@@ -1038,11 +1036,8 @@ class RedisQueue extends BaseService implements QueueInterface {
             $arr    = $client->hMGet($tableKey, $keys);
             if (!empty($arr)) {
                 foreach ($arr as $k => &$v) {
-                    if (!empty($v) && ValidateHelper::isJson(strval($v))) {
-                        $v = json_decode($v, true);
-                    } else {
-                        $v = [];
-                    }
+                    $t = unserialize($v);
+                    $v = is_array($t) && !empty($t) ? $t : [];
                 }
             }
         } catch (Throwable $e) {
