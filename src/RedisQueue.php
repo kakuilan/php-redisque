@@ -1247,7 +1247,25 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function clear(string $queueName = ''): bool {
-        // TODO: Implement clear() method.
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
+            return false;
+        }
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $res    = $client->del($queInfo->queueKey);
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
 
     /**
