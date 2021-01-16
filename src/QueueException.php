@@ -70,13 +70,13 @@ class QueueException extends BaseException {
     /**
      * 错误码-队列消息为空
      */
-    const ERR_CODE_QUEUE_MESSAG_EEMPTY = 5;
+    const ERR_CODE_QUEUE_MESSAG_EMPTY = 5;
 
 
     /**
      * 错误消息-队列消息为空
      */
-    const ERR_MESG_QUEUE_MESSAG_EEMPTY = 'The queue message cannot be empty.';
+    const ERR_MESG_QUEUE_MESSAG_EMPTY = 'The queue message cannot be empty.';
 
 
     /**
@@ -104,9 +104,21 @@ class QueueException extends BaseException {
 
 
     /**
+     * 错误码-队列-中转队列为空
+     */
+    const ERR_CODE_QUEUE_TRANS_QUEEMPTY = 8;
+
+
+    /**
+     * 错误码-队列-中转队列为空
+     */
+    const ERR_MESG_QUEUE_TRANS_QUEEMPTY = 'The transfer queue is empty.';
+
+
+    /**
      * 错误码-redis客户端不存在
      */
-    const ERR_CODE_CLIENT_NOTEXIST = 8;
+    const ERR_CODE_CLIENT_NOTEXIST = 9;
 
 
     /**
@@ -118,13 +130,25 @@ class QueueException extends BaseException {
     /**
      * 错误码-redis客户端不能连接
      */
-    const ERR_CODE_CLIENT_CANNOT_CONNECT = 9;
+    const ERR_CODE_CLIENT_CANNOT_CONNECT = 10;
 
 
     /**
      * 错误消息-redis客户端不能连接
      */
     const ERR_MESG_CLIENT_CANNOT_CONNECT = 'Redis client cannot connect.';
+
+
+    /**
+     * 错误码-redis客户端获取锁失败
+     */
+    const ERR_CODE_CLIENT_LOCK_FAIL = 11;
+
+
+    /**
+     * 错误消息-redis客户端获取锁失败
+     */
+    const ERR_MESG_CLIENT_LOCK_FAIL = 'Redis client get lock fail.';
 
 
     /**

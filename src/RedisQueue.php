@@ -12,10 +12,10 @@ namespace Redisque;
 use Kph\Exceptions\BaseException;
 use Kph\Services\BaseService;
 use Kph\Consts;
-use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\EncryptHelper;
 use Kph\Helpers\StringHelper;
-use Kph\Helpers\DateHelper;
 use Kph\Helpers\ValidateHelper;
+use Kph\Util\MacAddress;
 use Redis;
 use RedisException;
 use Exception;
@@ -356,6 +356,7 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 获取操作锁
+     * [操作名+数据ID]唯一
      * @param string $operation 操作名
      * @param mixed $dataId 数据ID
      * @param int $operateUid 当前操作者UID
@@ -686,7 +687,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     public function add(array $msg, int $weight = 0, string $queueName = ''): bool {
         $res = false;
         if (empty($msg)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EMPTY);
             return $res;
         }
         if (empty($queueName)) {
@@ -727,7 +728,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     public function addMulti(array ...$msgs): bool {
         $res = false;
         if (empty($msgs)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EMPTY);
             return $res;
         }
 
@@ -772,7 +773,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     public function push(array $msg, int $weight = 0, string $queueName = ''): bool {
         $res = false;
         if (empty($msg)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EMPTY);
             return $res;
         }
         if (empty($queueName)) {
@@ -813,7 +814,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     public function pushMulti(array ...$msgs): bool {
         $res = false;
         if (empty($msgs)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EMPTY);
             return $res;
         }
 
@@ -1055,7 +1056,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function transfer(array $msg, string $queueName = ''): bool {
         if (empty($msg)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EEMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EEMPTY);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_EMPTY, QueueException::ERR_CODE_QUEUE_MESSAG_EMPTY);
             return false;
         }
 
@@ -1117,6 +1118,68 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
         // TODO: Implement transMsgReadd2Queue() method.
+        if (!in_array($transType, array_keys(self::QUEUE_TRANS_NAME))) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_OPERATE_FAIL, QueueException::ERR_CODE_QUEUE_OPERATE_FAIL);
+            return 0;
+        }
+
+        if (empty($uniqueCode)) {
+            try {
+                $uniqueCode = MacAddress::getAddress();
+            } catch (Throwable $e) {
+                $uniqueCode = self::getClass();
+            }
+        }
+
+        $success = 0;
+        $uid     = EncryptHelper::murmurhash3Int($uniqueCode, 3, false);
+        $ttl     = ($this->transTime > 0) ? $this->transTime : self::QUEUE_TRANS_LOCK_TIME[$transType];
+        $queKey  = self::getTransQueueKey($transType);
+        $tabKey  = self::getTransTableKey($transType);
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+            return 0;
+        }
+
+        //获取锁
+        $lockUid = self::getLockOperate(__METHOD__, $transType, $uid, $ttl, $client);
+        if ($lockUid <= 0) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_LOCK_FAIL, QueueException::ERR_CODE_CLIENT_LOCK_FAIL);
+            return 0;
+        }
+
+        try {
+            $len = (int)$client->hLen($tabKey);
+            if ($len == 0) {
+                $this->setErrorInfo(QueueException::ERR_CODE_QUEUE_TRANS_QUEEMPTY, QueueException::ERR_MESG_QUEUE_TRANS_QUEEMPTY);
+                self::unlockOperate(__METHOD__, $transType, $client);
+                return 0;
+            }
+
+            $iteKey    = null;
+            $beginTime = time();
+            while ($arr = $this->getRedisClient($this->connName)->zRange($queKey, 0, 0, true)) {
+                foreach ($arr as $iteKey => $score) {
+                    break;
+                }
+
+                $now = time();
+                if (($now - $beginTime) > $ttl) {
+                    break;
+                }
+
+                $item = $this->getMsgByTransKey($iteKey);
+
+
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return $success;
     }
 
     /**
