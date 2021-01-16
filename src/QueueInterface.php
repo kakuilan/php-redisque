@@ -264,10 +264,10 @@ interface QueueInterface {
     /**
      * 根据中转key获取单个中转消息
      * @param string $key
-     * @param int $priority
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
      * @return array
      */
-    public function getMsgByTransKey(string $key, int $priority): array;
+    public function getMsgByTransKey(string $key, int $transType): array;
 
 
     /**
@@ -281,11 +281,11 @@ interface QueueInterface {
 
     /**
      * 根据中转key获取多个中转消息
-     * @param int $priority
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
      * @param string ...$keys
      * @return array
      */
-    public function getMsgsByTransKeys(int $priority, string ...$keys): array;
+    public function getMsgsByTransKeys(int $transType, string ...$keys): array;
 
 
     /**
