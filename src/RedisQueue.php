@@ -1005,23 +1005,13 @@ class RedisQueue extends BaseService implements QueueInterface {
 
     /**
      * 根据中转key获取多个中转消息
-     * @param string $queueName 消息所在的队列名
+     * @param int $priority
      * @param string ...$keys
      * @return array key=>msg键值对
      */
-    public function getMsgsByTransKeys(string $queueName, string ...$keys): array {
-        if ($queueName == '') {
-            $queueName = $this->queueName;
-        }
-
-        /* @var $queInfo QueueInfo */
-        $queInfo = $this->getQueueInfo($queueName);
-        if (ValidateHelper::isEmptyObject($queInfo)) {
-            return [];
-        }
-
+    public function getMsgsByTransKeys(int $priority, string ...$keys): array {
         $res      = [];
-        $tableKey = self::getTransTableKey($queInfo->priority);
+        $tableKey = self::getTransTableKey($priority);
         try {
             $client = $this->getRedisClient($this->connName);
             $arr    = $client->hMGet($tableKey, $keys);

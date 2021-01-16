@@ -281,11 +281,11 @@ interface QueueInterface {
 
     /**
      * 根据中转key获取多个中转消息
-     * @param string $queueName
+     * @param int $priority
      * @param string ...$keys
      * @return array
      */
-    public function getMsgsByTransKeys(string $queueName, string ...$keys): array;
+    public function getMsgsByTransKeys(int $priority, string ...$keys): array;
 
 
     /**
