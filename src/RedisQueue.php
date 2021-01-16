@@ -1242,7 +1242,7 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
-     * 清空队列
+     * 清空队列(谨慎)
      * @param string $queueName 队列名
      * @return bool
      */
@@ -1251,11 +1251,38 @@ class RedisQueue extends BaseService implements QueueInterface {
     }
 
     /**
-     * 删除队列
+     * 删除队列(谨慎)
      * @param string $queueName 队列名
      * @return bool
      */
     public function delete(string $queueName = ''): bool {
-        // TODO: Implement delete() method.
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
+            return false;
+        }
+
+        try {
+            $key    = self::getTableKey();
+            $client = $this->getRedisClient($this->connName);
+            $client->multi();
+            $client->del($queInfo->queueKey);
+            $client->hDel($key, $queInfo->queueName);
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                unset(self::$queueNamesCache[$queInfo->queueName]);
+                $res = true;
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
+
 }
