@@ -309,7 +309,7 @@ interface QueueInterface {
     /**
      * 消息确认(处理完毕后向队列确认,成功则从中转队列移除;失败则重新加入任务队列;若无确认,消息重新入栈)
      * @param bool $ok 处理结果:true成功,false失败
-     * @param mixed $msg 消息或该消息的中转key
+     * @param array|string $msg 消息或该消息的中转key
      * @return bool
      */
     public function confirm(bool $ok, $msg): bool;

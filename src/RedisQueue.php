@@ -1066,7 +1066,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         /* @var $queInfo QueueInfo */
         $queInfo = $this->getQueueInfo($queueName);
         if (ValidateHelper::isEmptyObject($queInfo)) {
-            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_TRANSFERFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_TRANSFERFAIL);
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
             return false;
         }
 
@@ -1122,11 +1122,45 @@ class RedisQueue extends BaseService implements QueueInterface {
     /**
      * 消息确认(处理完毕后向队列确认,成功则从中转队列移除;失败则重新加入任务队列;若无确认,消息重新入栈)
      * @param bool $ok 处理结果:true成功,false失败
-     * @param mixed $msg 消息或该消息的中转key
+     * @param array|string $msg 消息或该消息的中转key
      * @return bool
      */
     public function confirm(bool $ok, $msg): bool {
-        // TODO: Implement confirm() method.
+        if (empty($msg)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL);
+            return false;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
+            return false;
+        }
+
+        $iteKey = is_array($msg) ? self::getMsgToTransKey($msg) : strval($msg);
+        $queKey = self::getTransQueueKey($queInfo->priority);
+        $tabKey = self::getTransTableKey($queInfo->priority);
+
+        //redis事务
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $client->multi();
+            $client->zRem($queKey, $iteKey);
+            $client->hDel($tabKey, $iteKey);
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                $res = true;
+            } else {
+                //重新入栈
+                $this->push($msg);
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
 
     /**
