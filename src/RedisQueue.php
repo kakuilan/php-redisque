@@ -1215,7 +1215,30 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return int
      */
     public function len(string $queueName = ''): int {
-        // TODO: Implement len() method.
+        $res = 0;
+        if (empty($queueName)) {
+            $queueName = $this->queueName;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo($queueName);
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
+            return $res;
+        }
+
+        try {
+            $client = $this->getRedisClient($this->connName);
+            if ($queInfo->isSort) {
+                $res = $client->zCount($queInfo->queueKey, PHP_INT_MIN, PHP_INT_MAX);
+            } else {
+                $res = $client->lLen($queInfo->queueKey);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return intval($res);
     }
 
     /**
