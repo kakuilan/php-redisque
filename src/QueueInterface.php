@@ -319,9 +319,9 @@ interface QueueInterface {
      * 消息批量确认
      * @param bool $ok 处理结果:true成功,false失败
      * @param mixed ...$msgs 消息或该消息的中转key
-     * @return int
+     * @return bool
      */
-    public function confirmMulti(bool $ok, ...$msgs): int;
+    public function confirmMulti(bool $ok, ...$msgs): bool;
 
 
     /**

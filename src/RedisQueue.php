@@ -1167,10 +1167,46 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 消息批量确认
      * @param bool $ok 处理结果:true成功,false失败
      * @param mixed ...$msgs 消息或该消息的中转key
-     * @return int
+     * @return bool
      */
-    public function confirmMulti(bool $ok, ...$msgs): int {
-        // TODO: Implement confirmMulti() method.
+    public function confirmMulti(bool $ok, ...$msgs): bool {
+        if (empty($msgs)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL);
+            return false;
+        }
+
+        /* @var $queInfo QueueInfo */
+        $queInfo = $this->getQueueInfo();
+        if (ValidateHelper::isEmptyObject($queInfo)) {
+            $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_NOTEXIST, QueueException::ERR_CODE_QUEUE_NOTEXIST);
+            return false;
+        }
+
+        $queKey = self::getTransQueueKey($queInfo->priority);
+        $tabKey = self::getTransTableKey($queInfo->priority);
+
+        //redis事务
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $client->multi();
+            foreach ($msgs as $msg) {
+                $iteKey = is_array($msg) ? self::getMsgToTransKey($msg) : strval($msg);
+                $client->zRem($queKey, $iteKey);
+                $client->hDel($tabKey, $iteKey);
+            }
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                $res = true;
+            } else {
+                //重新入栈
+                $this->pushMulti(...$msgs);
+                $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_MESSAG_CONFIRMFAIL, QueueException::ERR_CODE_QUEUE_MESSAG_CONFIRMFAIL);
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
 
     /**
