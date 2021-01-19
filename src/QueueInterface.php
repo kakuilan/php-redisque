@@ -289,6 +289,15 @@ interface QueueInterface {
 
 
     /**
+     * 根据中转key删除单个中转消息
+     * @param string $key
+     * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
+     * @return array
+     */
+    public function removeMsgByTransKey(string $key, int $transType): array;
+
+
+    /**
      * 将消息加入中转队列
      * @param array $msg
      * @param string $queueName
