@@ -1032,9 +1032,9 @@ class RedisQueue extends BaseService implements QueueInterface {
      * 根据中转key删除单个中转消息
      * @param string $key
      * @param int $transType 中转队列类型:0非优先队列中转,1优先队列中转
-     * @return array
+     * @return bool
      */
-    public function removeMsgByTransKey(string $key, int $transType): array {
+    public function removeMsgByTransKey(string $key, int $transType): bool {
         // TODO: Implement removeMsgByTransKey() method.
     }
 
