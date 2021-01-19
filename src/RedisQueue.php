@@ -1035,7 +1035,26 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return bool
      */
     public function removeMsgByTransKey(string $key, int $transType): bool {
-        // TODO: Implement removeMsgByTransKey() method.
+        if (empty($key)) {
+            return false;
+        }
+
+        $queKey = self::getTransQueueKey($transType);
+        $tabKey = self::getTransTableKey($transType);
+        try {
+            $client = $this->getRedisClient($this->connName);
+            $client->multi();
+            $client->hDel($tabKey, $key);
+            $client->zRem($queKey, $key);
+            $mulRes = $client->exec();
+            if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
+                $res = true;
+            }
+        } catch (Throwable $e) {
+            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
+        }
+
+        return isset($res) && $res;
     }
 
     /**
