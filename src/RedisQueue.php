@@ -1151,7 +1151,18 @@ class RedisQueue extends BaseService implements QueueInterface {
                     break;
                 }
 
-                $item = $this->getMsgByTransKey($iteKey, $transType);
+                $item    = $this->getMsgByTransKey($iteKey, $transType);
+                $msg     = $item[self::TRAN_ITEM_FIELD] ?? [];
+                $queName = $item[self::TRAN_NAME_FIELD] ?? '';
+                if (empty($msg) || empty($queName)) {
+                    continue;
+                }
+
+                /* @var $queInfo QueueInfo */
+                $queInfo = $this->getQueueInfo($queName);
+                if (ValidateHelper::isEmptyObject($queInfo)) {
+                    continue;
+                }
 
 
             }
