@@ -388,14 +388,14 @@ class RedisQueue extends BaseService implements QueueInterface {
         $now    = time();
         $expire = $now + $ttl;
         $key    = self::getOperateKey($operation, $dataId);
-        $data   = implode('|', [$operateUid, $expire]);
+        $data   = implode(Consts::DELIMITER, [$operateUid, $expire]);
 
         if ($ret = $redis->setnx($key, $data)) {
             $redis->expire($key, $ttl);
             $res = $operateUid;
         } else {
             $val = $redis->get($key);
-            $arr = $val ? explode('|', $val) : [];
+            $arr = $val ? explode(Consts::DELIMITER, $val) : [];
             $uid = $arr[0] ?? 0;
             $exp = $arr[1] ?? 0;
             if (empty($val) || $uid == 0) {
@@ -1126,7 +1126,6 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @return int
      */
     public function transMsgReadd2Queue(int $transType, string $uniqueCode = ''): int {
-        // TODO: Implement transMsgReadd2Queue() method.
         if (!in_array($transType, array_keys(self::QUEUE_TRANS_NAME))) {
             $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_OPERATE_FAIL, QueueException::ERR_CODE_QUEUE_OPERATE_FAIL);
             return 0;
@@ -1184,20 +1183,37 @@ class RedisQueue extends BaseService implements QueueInterface {
                 $msg     = $item[self::TRAN_ITEM_FIELD] ?? [];
                 $queName = $item[self::TRAN_NAME_FIELD] ?? '';
                 if (empty($msg) || empty($queName)) {
+                    $this->removeMsgByTransKey($iteKey, $transType);
                     continue;
                 }
 
                 /* @var $queInfo QueueInfo */
                 $queInfo = $this->getQueueInfo($queName);
                 if (ValidateHelper::isEmptyObject($queInfo)) {
+                    $this->removeMsgByTransKey($iteKey, $transType);
                     continue;
                 }
 
+                //检查该消息是否过期
+                $msgExpire = intval($msg[self::WRAP_EXPIRE_FIELD] ?? 0);
+                if ($msgExpire > 0 && $msgExpire <= $now) {
+                    $this->removeMsgByTransKey($iteKey, $transType);
+                    continue;
+                }
 
+                //重新入栈
+                $ret = $this->push($msg, 0, $queName);
+                if ($ret) {
+                    $success++;
+                    $this->removeMsgByTransKey($iteKey, $transType);
+                }
             }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
         }
+
+        //解锁
+        self::unlockOperate(__METHOD__, $transType, $this->getRedisClient($this->connName));
 
         return $success;
     }
