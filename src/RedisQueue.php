@@ -1145,17 +1145,16 @@ class RedisQueue extends BaseService implements QueueInterface {
         $queKey  = self::getTransQueueKey($transType);
         $tabKey  = self::getTransTableKey($transType);
 
+        //获取锁
         try {
-            $client = $this->getRedisClient($this->connName);
+            $client  = $this->getRedisClient($this->connName);
+            $lockUid = self::getLockOperate(__METHOD__, $transType, $uid, $ttl, $client);
+            if ($lockUid <= 0) {
+                $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_LOCK_FAIL, QueueException::ERR_CODE_CLIENT_LOCK_FAIL);
+                return 0;
+            }
         } catch (Throwable $e) {
             $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_CANNOT_CONNECT, QueueException::ERR_CODE_CLIENT_CANNOT_CONNECT);
-            return 0;
-        }
-
-        //获取锁
-        $lockUid = self::getLockOperate(__METHOD__, $transType, $uid, $ttl, $client);
-        if ($lockUid <= 0) {
-            $this->setErrorInfo(QueueException::ERR_MESG_CLIENT_LOCK_FAIL, QueueException::ERR_CODE_CLIENT_LOCK_FAIL);
             return 0;
         }
 
