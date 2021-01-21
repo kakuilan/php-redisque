@@ -57,6 +57,15 @@ class RedisConn extends BaseService {
 
 
     /**
+     * 获取默认配置
+     * @return array
+     */
+    public static function getDefaultConf(): array {
+        return self::$defaultConf;
+    }
+
+
+    /**
      * 获取redis客户端
      * @param array $conf redis配置
      * @return Redis

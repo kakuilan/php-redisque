@@ -16,3 +16,12 @@ composer require kakuilan/php-redisque
 ### TODO
 - 2个中转队列,一个快,一个慢
 - 中转队列是个有序集合,重要的消息排在前面
+
+### 测试
+```sh
+phpunit --bootstrap=tests/bootstrap.php ./tests/
+
+# 或者
+cd tests
+phpunit
+```
