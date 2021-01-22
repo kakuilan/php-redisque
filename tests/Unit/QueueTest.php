@@ -16,8 +16,43 @@ use Throwable;
 use Redisque\RedisConn;
 use Redisque\RedisClient;
 use Redisque\RedisQueue;
+use Redisque\QueueInterface;
+use Redisque\QueueException;
 
+/**
+ * Class QueueTest
+ * @package Redisque\Tests\Unit
+ */
 class QueueTest extends TestCase {
+
+
+    /**
+     * 队列1配置
+     * @var array
+     */
+    public static $que1cnf = [
+        'queueName' => 'hello',
+        'connName'  => 'default',
+        'isSort'    => false,
+        'priority'  => 0,
+        'expire'    => 1800,
+        'transTime' => 600,
+    ];
+
+
+    /**
+     * 队列2配置
+     * @var array
+     */
+    public static $que2cnf = [
+        'queueName' => 'world',
+        'connName'  => 'comm',
+        'isSort'    => true,
+        'priority'  => 1,
+        'expire'    => 0,
+        'transTime' => 600,
+    ];
+
 
     public function testGetPrefix() {
         $str = RedisQueue::getPrefix();
@@ -35,6 +70,20 @@ class QueueTest extends TestCase {
             $time2   = $client2->getLastConnectTime();
             $this->assertEquals($time1, $time2);
         } catch (Throwable $e) {
+        }
+    }
+
+
+    public function testNewQueue() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            $queues = $queue1::getQueues();
+            $this->assertTrue(count($queues) == 2);
+        } catch (QueueException $e) {
         }
     }
 

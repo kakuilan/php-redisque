@@ -31,7 +31,7 @@ class ConnTest extends TestCase {
         'host'     => '192.168.56.1',
         'password' => '123456',
         'port'     => 6379,
-        'select'   => 1,
+        'select'   => 0,
     ];
 
 
