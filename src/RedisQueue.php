@@ -531,13 +531,12 @@ class RedisQueue extends BaseService implements QueueInterface {
             $queueKey = self::getQueueKey($queueName, $client);
             $arr      = explode(Consts::DELIMITER, $queueKey);
             if (!empty($arr) && is_array($arr)) {
-                [, $queueName, $sortType, $priority, $expire] = $arr;
+                [, $queueName, $sortType, $priority] = $arr;
                 $res            = new QueueInfo();
                 $res->queueName = $queueName;
                 $res->queueKey  = $queueKey;
                 $res->isSort    = ($sortType == self::QUEUE_TYPE_NOSORT ? false : true);
                 $res->priority  = intval($priority);
-                $res->expire    = intval($expire);
             } else {
                 $this->setErrorInfo(QueueException::ERR_MESG_QUEUE_INFO_FAIL, QueueException::ERR_CODE_QUEUE_INFO_FAIL);
             }
