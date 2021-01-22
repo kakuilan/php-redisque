@@ -25,4 +25,18 @@ class QueueTest extends TestCase {
     }
 
 
+    public function testDefaultRedis() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            RedisQueue::setDefaultRedis($client);
+
+            $client2 = RedisQueue::getDefaultRedis();
+            $time1   = $client->getLastConnectTime();
+            $time2   = $client2->getLastConnectTime();
+            $this->assertEquals($time1, $time2);
+        } catch (Throwable $e) {
+        }
+    }
+
+
 }
