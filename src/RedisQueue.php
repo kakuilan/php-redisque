@@ -205,7 +205,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @throws Throwable
      */
     public static function getDefaultRedis(): Redis {
-        if (is_null(self::$redis)) {
+        if (!is_object(self::$redis) || !(self::$redis instanceof Redis)) {
             return RedisConn::getRedis([]);
         }
 
