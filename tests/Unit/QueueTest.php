@@ -97,12 +97,14 @@ class QueueTest extends TestCase {
             $queue1->clear();
             $queue1->clear('world');
 
-            for ($i = 0; $i < 1000; $i++) {
+            for ($i = 0; $i < 500; $i++) {
                 $item1 = [
+                    'type' => 'add',
                     'name' => StringHelper::randString(4, 5),
                     'age'  => rand(1, 99),
                 ];
                 $item2 = [
+                    'type'   => 'add',
                     'order'  => StringHelper::randSimple(32),
                     'status' => boolval(mt_rand(0, 1)),
                 ];
@@ -113,8 +115,8 @@ class QueueTest extends TestCase {
 
             $len1 = $queue1->len();
             $len2 = $queue2->len();
-            $this->assertEquals(1000, $len1);
-            $this->assertEquals(1000, $len2);
+            $this->assertEquals(500, $len1);
+            $this->assertEquals(500, $len2);
         } catch (QueueException $e) {
         }
     }
@@ -133,10 +135,12 @@ class QueueTest extends TestCase {
                 $arr2 = [];
                 for ($j = 0; $j < 10; $j++) {
                     $item1 = [
+                        'type' => 'add',
                         'name' => StringHelper::randString(4, 5),
                         'age'  => rand(1, 99),
                     ];
                     $item2 = [
+                        'type'   => 'add',
                         'order'  => StringHelper::randSimple(32),
                         'status' => boolval(mt_rand(0, 1)),
                     ];
@@ -152,6 +156,37 @@ class QueueTest extends TestCase {
             $len2 = $queue2->len();
             $this->assertEquals(500, $len1);
             $this->assertEquals(500, $len2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
+    public function testPush() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            for ($i = 0; $i < 500; $i++) {
+                $item1 = [
+                    'type' => 'push',
+                    'name' => StringHelper::randString(4, 5),
+                    'age'  => rand(1, 99),
+                ];
+                $item2 = [
+                    'type'   => 'push',
+                    'order'  => StringHelper::randSimple(32),
+                    'status' => boolval(mt_rand(0, 1)),
+                ];
+
+                $queue1->push($item1, mt_rand(1, 99));
+                $queue2->push($item2, mt_rand(1, 99));
+            }
+
+            $len1 = $queue1->len();
+            $len2 = $queue2->len();
+            $this->assertEquals(1000, $len1);
+            $this->assertEquals(1000, $len2);
         } catch (QueueException $e) {
         }
     }
