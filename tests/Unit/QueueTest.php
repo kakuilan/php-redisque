@@ -14,6 +14,7 @@ use Error;
 use Exception;
 use Throwable;
 use Redisque\RedisConn;
+use Kph\Helpers\StringHelper;
 use Redisque\RedisClient;
 use Redisque\RedisQueue;
 use Redisque\QueueInterface;
@@ -35,7 +36,7 @@ class QueueTest extends TestCase {
         'connName'  => 'default',
         'isSort'    => false,
         'priority'  => 0,
-        'expire'    => 1800,
+        'expire'    => 3600,
         'transTime' => 600,
     ];
 
@@ -49,7 +50,7 @@ class QueueTest extends TestCase {
         'connName'  => 'comm',
         'isSort'    => true,
         'priority'  => 1,
-        'expire'    => 0,
+        'expire'    => 1800,
         'transTime' => 600,
     ];
 
@@ -83,6 +84,39 @@ class QueueTest extends TestCase {
 
             $queues = $queue1::getQueues();
             $this->assertTrue(count($queues) == 2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
+    public function testAdd() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            $queue1->clear();
+            $queue1->clear('world');
+
+            for ($i = 0; $i < 1000; $i++) {
+                $item1 = [
+                    'name' => StringHelper::randString(4, 5),
+                    'age'  => rand(1, 99),
+                ];
+                $item2 = [
+                    'order'  => StringHelper::randSimple(32),
+                    'status' => boolval(mt_rand(0, 1)),
+                ];
+
+                $queue1->add($item1, mt_rand(1, 99));
+                $queue2->add($item2, mt_rand(1, 99));
+            }
+
+            $len1 = $queue1->len();
+            $len2 = $queue2->len();
+            $this->assertEquals(1000, $len1);
+            $this->assertEquals(1000, $len2);
         } catch (QueueException $e) {
         }
     }

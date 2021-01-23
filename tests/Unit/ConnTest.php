@@ -28,6 +28,8 @@ class ConnTest extends TestCase {
      * @var array
      */
     public static $conf = [
+//        'host'     => 'localhost',
+//        'password' => '',
         'host'     => '192.168.56.1',
         'password' => '123456',
         'port'     => 6379,
