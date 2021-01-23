@@ -11,6 +11,9 @@ os:
 services:
   - redis
 
+before_install:
+  - before_script: echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+
 before_script:
   - travis_retry composer self-update
   - travis_retry composer install --no-interaction --prefer-source --dev
