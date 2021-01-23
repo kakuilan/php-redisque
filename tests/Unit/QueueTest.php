@@ -192,4 +192,41 @@ class QueueTest extends TestCase {
     }
 
 
+    public function testPushMulti() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            for ($i = 0; $i < 50; $i++) {
+                $arr1 = [];
+                $arr2 = [];
+                for ($j = 0; $j < 10; $j++) {
+                    $item1 = [
+                        'type' => 'push',
+                        'name' => StringHelper::randString(4, 5),
+                        'age'  => rand(1, 99),
+                    ];
+                    $item2 = [
+                        'type'   => 'push',
+                        'order'  => StringHelper::randSimple(32),
+                        'status' => boolval(mt_rand(0, 1)),
+                    ];
+                    array_push($arr1, $item1);
+                    array_push($arr2, $item2);
+                }
+
+                $queue1->pushMulti(...$arr1);
+                $queue2->pushMulti(...$arr2);
+            }
+
+            $len1 = $queue1->len();
+            $len2 = $queue2->len();
+            $this->assertEquals(1500, $len1);
+            $this->assertEquals(1500, $len2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
 }
