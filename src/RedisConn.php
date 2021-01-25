@@ -95,8 +95,8 @@ class RedisConn extends BaseService {
             $pingRes = true;
             if (!($now >= $lastTime && $now < $maxTime)) {
                 try {
-                    $ping    = $redis->ping('');
-                    $pingRes = (strpos($ping, "PONG") !== false);
+                    $ping    = $redis->ping('pong');
+                    $pingRes = (stripos($ping, "pong") !== false);
                 } catch (Throwable $e) {
                     $pingRes = false;
                 }
@@ -104,19 +104,23 @@ class RedisConn extends BaseService {
         }
 
         if (empty($redis) || !$pingRes) {
-            $redis   = new RedisClient();
-            $pingRes = $redis->pconnect($conf['host'], $conf['port'], 0, $persistentId);
-            if (isset($conf['password']) && !empty($conf['password'])) {
-                $pingRes = $redis->auth($conf['password']);
+            try {
+                $redis   = new RedisClient();
+                $pingRes = $redis->pconnect($conf['host'], $conf['port'], 0, $persistentId);
+                if (isset($conf['password']) && !empty($conf['password'])) {
+                    $pingRes = $redis->auth($conf['password']);
+                    var_dump('----$pingRes', $pingRes);
+                }
+
+                $selectDb = (isset($conf['select']) && is_int($conf['select'])) ? $conf['select'] : 0;
+                $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+                $redis->select($selectDb);
+
+                $redis->setLastConnectTime($now);
+
+                self::$conns[$key] = $redis;
+            } catch (Throwable $e) {
             }
-
-            $selectDb = (isset($conf['select']) && is_int($conf['select'])) ? $conf['select'] : 0;
-            $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-            $redis->select($selectDb);
-
-            $redis->setLastConnectTime($now);
-
-            self::$conns[$key] = $redis;
         }
 
         if (!$pingRes) {

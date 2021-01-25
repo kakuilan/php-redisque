@@ -28,10 +28,10 @@ class ConnTest extends TestCase {
      * @var array
      */
     public static $conf = [
-        //        'host'     => 'localhost',
-        //        'password' => '',
-        'host'     => '192.168.56.1',
-        'password' => '123456',
+        'host'     => 'localhost',
+        'password' => '',
+        //        'host'     => '192.168.56.1',
+        //        'password' => '123456',
         'port'     => 6379,
         'select'   => 0,
     ];
@@ -62,7 +62,16 @@ class ConnTest extends TestCase {
             $client3 = RedisConn::getRedis([]);
             $time3   = $client3->getLastConnectTime();
             $this->assertEquals($time3, $time2);
+
+            $conf    = array_merge(self::$conf, ['wait_timeout' => 1]);
+            $client4 = RedisConn::getRedis($conf);
+            sleep(2);
+            $client5 = RedisConn::getRedis($conf);
+
+            $conf2   = array_merge(self::$conf, ['password' => '654321']);
+            $client6 = RedisConn::getRedis($conf2);
         } catch (Throwable $e) {
+            var_dump($e->getMessage());
         }
     }
 
