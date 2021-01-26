@@ -12,9 +12,11 @@ namespace Redisque\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use Error;
 use Exception;
+use Redisque\QueueInfo;
 use Throwable;
 use Redisque\RedisConn;
 use Kph\Helpers\StringHelper;
+use Kph\Helpers\ValidateHelper;
 use Redisque\RedisClient;
 use Redisque\RedisQueue;
 use Redisque\QueueInterface;
@@ -325,6 +327,30 @@ class QueueTest extends TestCase {
             $len2 = $queue2->len();
             $this->assertGreaterThan(0, $len1);
             $this->assertGreaterThan(0, $len2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
+    public function testClearDelete() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            $queue1->clear();
+            $len1 = $queue1->len();
+            $this->assertEquals(0, $len1);
+
+            /* @var $inf1 QueueInfo */
+            $inf1 = $queue2->getQueueInfo();
+            $queue2->delete();
+            $inf2 = $queue2->getQueueInfo();
+            $chk  = RedisQueue::queueExists($inf1->queueName);
+
+            $this->assertTrue($inf1 instanceof QueueInfo);
+            $this->assertTrue(ValidateHelper::isEmptyObject($inf2));
+            $this->assertFalse($chk);
         } catch (QueueException $e) {
         }
     }
