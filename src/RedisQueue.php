@@ -249,7 +249,6 @@ class RedisQueue extends BaseService implements QueueInterface {
      */
     public static function countQueues(bool $readCache = true, $redis = null): int {
         $arr = self::getQueues($readCache, $redis);
-
         return $arr ? count($arr) : 0;
     }
 

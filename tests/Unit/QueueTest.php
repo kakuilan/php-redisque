@@ -63,6 +63,9 @@ class QueueTest extends TestCase {
 
     public function testDefaultRedis() {
         try {
+            RedisQueue::getDefaultRedis();
+            RedisQueue::getQueues();
+
             $client = RedisConn::getRedis(ConnTest::$conf);
             RedisQueue::setDefaultRedis($client);
 
@@ -82,7 +85,8 @@ class QueueTest extends TestCase {
             $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
 
             $queues = $queue1::getQueues();
-            $this->assertTrue(count($queues) == 2);
+            $this->assertTrue(2 === RedisQueue::countQueues());
+            $this->assertTrue(RedisQueue::queueExists('hello'));
         } catch (QueueException $e) {
         }
     }
