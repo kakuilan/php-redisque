@@ -1099,6 +1099,10 @@ class RedisQueue extends BaseService implements QueueInterface {
             $client->multi();
             $client->zAdd($queKey, $score, $iteKey);
             $client->hSet($tabKey, $iteKey, $item);
+            if ($queInfo->isSort) {
+                $client->zRem($queInfo->queueKey, $this->pack($msg));
+            }
+
             $mulRes = $client->exec();
             if (is_array($mulRes) && isset($mulRes[0]) && !empty($mulRes[0])) {
                 $res = true;
