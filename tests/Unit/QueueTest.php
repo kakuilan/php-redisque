@@ -239,11 +239,13 @@ class QueueTest extends TestCase {
             $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
             $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
 
-            $itm1 = $queue1->shift();
-            $itm2 = $queue2->shift();
+            for ($i = 0; $i < 200; $i++) {
+                $itm1 = $queue1->shift();
+                $itm2 = $queue2->shift();
 
-            $itm3 = $queue1->pop();
-            $itm4 = $queue2->pop();
+                $itm3 = $queue1->pop();
+                $itm4 = $queue2->pop();
+            }
 
             $this->assertNotEmpty($itm1);
             $this->assertNotEmpty($itm2);
@@ -261,11 +263,13 @@ class QueueTest extends TestCase {
             $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
 
             for ($i = 0; $i < 100; $i++) {
+                $ok = boolval(mt_rand(0, 1));
+
                 $itm1 = $queue1->shift();
                 $itm2 = $queue2->shift();
 
-                $ret1 = $queue1->confirm(boolval(mt_rand(0, 1)), $itm1);
-                $ret2 = $queue2->confirm(boolval(mt_rand(0, 1)), $itm2);
+                $ret1 = $queue1->confirm($ok, $itm1);
+                $ret2 = $queue2->confirm($ok, $itm2);
             }
             $this->assertTrue($ret1);
             $this->assertTrue($ret2);
@@ -290,16 +294,38 @@ class QueueTest extends TestCase {
 
             $size = 50;
             for ($j = 1; $j <= 10; $j++) {
+                $ok   = boolval(mt_rand(0, 1));
                 $tmp1 = array_slice($arr1, ($j - 1) * $size, $size);
                 $tmp2 = array_slice($arr2, ($j - 1) * $size, $size);
 
-                $ret1 = $queue1->confirmMulti(boolval(mt_rand(0, 1)), ...$tmp1);
-                $ret2 = $queue2->confirmMulti(boolval(mt_rand(0, 1)), ...$tmp2);
+                $ret1 = $queue1->confirmMulti($ok, ...$tmp1);
+                $ret2 = $queue2->confirmMulti($ok, ...$tmp2);
             }
             $this->assertTrue($ret1);
             $this->assertTrue($ret2);
-        } catch (QueueException $e) {
 
+            $len1 = $queue1->len();
+            $len2 = $queue2->len();
+            $this->assertEquals($len1, $len2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
+    public function testTransMsgReadd2Queue() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            $queue1->transMsgReadd2Queue(RedisQueue::QUEUE_PRIORITY_NO);
+            $queue2->transMsgReadd2Queue(RedisQueue::QUEUE_PRIORITY_IS);
+
+            $len1 = $queue1->len();
+            $len2 = $queue2->len();
+            $this->assertGreaterThan(0, $len1);
+            $this->assertGreaterThan(0, $len2);
+        } catch (QueueException $e) {
         }
     }
 
