@@ -109,7 +109,6 @@ class RedisConn extends BaseService {
                 $pingRes = $redis->pconnect($conf['host'], $conf['port'], 0, $persistentId);
                 if (isset($conf['password']) && !empty($conf['password'])) {
                     $pingRes = $redis->auth($conf['password']);
-                    var_dump('----$pingRes', $pingRes);
                 }
 
                 $selectDb = (isset($conf['select']) && is_int($conf['select'])) ? $conf['select'] : 0;

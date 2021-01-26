@@ -70,8 +70,10 @@ class ConnTest extends TestCase {
 
             $conf2   = array_merge(self::$conf, ['password' => '654321']);
             $client6 = RedisConn::getRedis($conf2);
+
+            $client7 = RedisConn::getRedis($conf2);
         } catch (Throwable $e) {
-            var_dump($e->getMessage());
+            //var_dump($e->getMessage());
         }
     }
 
