@@ -254,4 +254,54 @@ class QueueTest extends TestCase {
     }
 
 
+    public function testConfirm() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            for ($i = 0; $i < 100; $i++) {
+                $itm1 = $queue1->shift();
+                $itm2 = $queue2->shift();
+
+                $ret1 = $queue1->confirm(boolval(mt_rand(0, 1)), $itm1);
+                $ret2 = $queue2->confirm(boolval(mt_rand(0, 1)), $itm2);
+            }
+            $this->assertTrue($ret1);
+            $this->assertTrue($ret2);
+        } catch (QueueException $e) {
+        }
+    }
+
+
+    public function testConfirmMulti() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+            $arr1   = [];
+            $arr2   = [];
+            for ($i = 0; $i < 500; $i++) {
+                $itm1 = $queue1->shift();
+                $itm2 = $queue2->shift();
+                array_push($arr1, $itm1);
+                array_push($arr2, $itm2);
+            }
+
+            $size = 50;
+            for ($j = 1; $j <= 10; $j++) {
+                $tmp1 = array_slice($arr1, ($j - 1) * $size, $size);
+                $tmp2 = array_slice($arr2, ($j - 1) * $size, $size);
+
+                $ret1 = $queue1->confirmMulti(boolval(mt_rand(0, 1)), ...$tmp1);
+                $ret2 = $queue2->confirmMulti(boolval(mt_rand(0, 1)), ...$tmp2);
+            }
+            $this->assertTrue($ret1);
+            $this->assertTrue($ret2);
+        } catch (QueueException $e) {
+
+        }
+    }
+
+
 }
