@@ -233,4 +233,25 @@ class QueueTest extends TestCase {
     }
 
 
+    public function testShiftPop() {
+        try {
+            $client = RedisConn::getRedis(ConnTest::$conf);
+            $queue1 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que1cnf);
+            $queue2 = RedisQueue::setDefaultRedis($client)->newQueue(self::$que2cnf);
+
+            $itm1 = $queue1->shift();
+            $itm2 = $queue2->shift();
+
+            $itm3 = $queue1->pop();
+            $itm4 = $queue2->pop();
+
+            $this->assertNotEmpty($itm1);
+            $this->assertNotEmpty($itm2);
+            $this->assertNotEmpty($itm3);
+            $this->assertNotEmpty($itm4);
+        } catch (QueueException $e) {
+        }
+    }
+
+
 }
