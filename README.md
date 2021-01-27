@@ -24,6 +24,7 @@ composer require kakuilan/php-redisque
 ### TODO
 - 2个中转队列,一个快,一个慢
 - 中转队列是个有序集合,重要的消息排在前面
+- 中转时间处理
 
 ### 测试
 ```sh
