@@ -205,7 +205,7 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @throws Throwable
      */
     public static function getDefaultRedis(): Redis {
-        if (!is_object(self::$redis) || !(self::$redis instanceof Redis)) {
+        if (!is_object(self::$redis)) {
             return RedisConn::getRedis([]);
         }
 
@@ -227,7 +227,7 @@ class RedisQueue extends BaseService implements QueueInterface {
                 } catch (Throwable $e) {
                 }
             }
-            if (!is_object($redis) || !($redis instanceof Redis)) {
+            if (!is_object($redis)) {
                 return [];
             }
 
@@ -267,7 +267,7 @@ class RedisQueue extends BaseService implements QueueInterface {
                 } catch (Throwable $e) {
                 }
             }
-            if (!is_object($redis) || !($redis instanceof Redis)) {
+            if (!is_object($redis)) {
                 return false;
             }
 
@@ -305,7 +305,7 @@ class RedisQueue extends BaseService implements QueueInterface {
                 } catch (Throwable $e) {
                 }
             }
-            if (!is_object($redis) || !($redis instanceof Redis)) {
+            if (!is_object($redis)) {
                 return '';
             }
 
@@ -376,7 +376,7 @@ class RedisQueue extends BaseService implements QueueInterface {
             } catch (Throwable $e) {
             }
         }
-        if (!is_object($redis) || !($redis instanceof Redis)) {
+        if (!is_object($redis)) {
             return $res;
         }
 
@@ -437,7 +437,7 @@ class RedisQueue extends BaseService implements QueueInterface {
             } catch (Throwable $e) {
             }
         }
-        if (!is_object($redis) || !($redis instanceof Redis)) {
+        if (!is_object($redis)) {
             return $res;
         }
 
