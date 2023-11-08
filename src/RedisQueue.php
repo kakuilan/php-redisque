@@ -389,7 +389,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         $key    = self::getOperateKey($operation, $dataId);
         $data   = implode(Consts::DELIMITER, [$operateUid, $expire]);
 
-        if ($ret = $redis->setnx($key, $data)) {
+        if ($redis->setnx($key, $data)) {
             $redis->expire($key, $ttl);
             $res = $operateUid;
         } else {
@@ -398,16 +398,14 @@ class RedisQueue extends BaseService implements QueueInterface {
             $uid = $arr[0] ?? 0;
             $exp = $arr[1] ?? 0;
             if (empty($val) || $uid == 0) {
-                if ($ret = $redis->setnx($key, $data)) {
+                if ($redis->setnx($key, $data)) {
                     $redis->expire($key, $ttl);
                     $res = $operateUid;
                 }
             } else {
-                if ($uid == $operateUid || ($now > $exp)) {
-                    if ($ret = $redis->setnx($key, $data)) {
-                        $redis->expire($key, $ttl);
-                        $res = $operateUid;
-                    }
+                if ($uid == $operateUid) {
+                    $redis->expire($key, max($ttl, $exp - $now));
+                    $res = $operateUid;
                 } else {
                     $res = -abs($uid);
                 }
