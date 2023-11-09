@@ -359,11 +359,11 @@ class RedisQueue extends BaseService implements QueueInterface {
      * @param string $operation 操作名
      * @param mixed $dataId 数据ID
      * @param int $operateUid 当前操作者UID
-     * @param int $ttl 有效期
+     * @param float $ttl 有效期,秒;支持3位小数(毫秒)
      * @param null|mixed $redis Redis客户端对象
      * @return int 获取到锁的UID:>0时为本身;<=0时为他人
      */
-    public static function getLockOperate(string $operation, $dataId, int $operateUid, int $ttl = 60, $redis = null): int {
+    public static function getLockOperate(string $operation, $dataId, int $operateUid, $ttl = 60.000, $redis = null): int {
         $res    = 0;
         $dataId = strval($dataId);
         if ($operation == '' || $dataId == '' || $operateUid <= 0) {
@@ -380,8 +380,9 @@ class RedisQueue extends BaseService implements QueueInterface {
             return $res;
         }
 
+        $ttl = floatval($ttl);
         if ($ttl <= 0) {
-            $ttl = 60;
+            $ttl = 60.000;
         }
 
         $now    = time();
@@ -390,7 +391,7 @@ class RedisQueue extends BaseService implements QueueInterface {
         $data   = implode(Consts::DELIMITER, [$operateUid, $expire]);
 
         if ($redis->setnx($key, $data)) {
-            $redis->expire($key, $ttl);
+            $redis->pexpire($key, $ttl * 1000);
             $res = $operateUid;
         } else {
             $val = $redis->get($key);
@@ -399,12 +400,12 @@ class RedisQueue extends BaseService implements QueueInterface {
             $exp = $arr[1] ?? 0;
             if (empty($val) || $uid == 0) {
                 if ($redis->setnx($key, $data)) {
-                    $redis->expire($key, $ttl);
+                    $redis->pexpire($key, $ttl * 1000);
                     $res = $operateUid;
                 }
             } else {
                 if ($uid == $operateUid) {
-                    $redis->expire($key, max($ttl, $exp - $now));
+                    $redis->pexpire($key, max($ttl, $exp - $now) * 1000);
                     $res = $operateUid;
                 } else {
                     $res = -abs($uid);
